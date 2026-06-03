@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Default Furniture Placement</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-800 text-white font-['Inter',system-ui,sans-serif] h-screen flex flex-col overflow-hidden">
+  <!-- Top Bar -->
+  <div class="flex items-center justify-between px-4 py-2 bg-slate-900 border-b border-slate-700 shrink-0">
+    <div class="flex items-center gap-3">
+      <span class="text-sm font-bold text-amber-400">⚙️ Admin</span>
+      <span class="text-slate-600 text-sm">/</span>
+      <span class="text-sm">Furniture Templates</span>
+      <span class="text-xs bg-slate-700 px-2 py-0.5 rounded text-slate-300">New Template</span>
+    </div>
+    <div class="flex gap-2">
+      <button class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded">Save Draft</button>
+      <button class="bg-emerald-600 text-white text-xs px-3 py-1.5 rounded">Publish</button>
+    </div>
+  </div>
+
+  <div class="flex flex-1 overflow-hidden">
+    <!-- Left: 2D Overhead Room View -->
+    <div class="flex-1 bg-slate-700 relative flex items-center justify-center">
+      <div class="relative w-[500px] h-[380px] bg-slate-600 rounded-lg">
+        <!-- Room walls outline -->
+        <div class="absolute inset-0">
+          <div class="absolute top-[40px] left-[50px] w-[400px] h-[300px] border-2 border-slate-400 rounded-sm"></div>
+          <div class="absolute top-[100px] left-[50px] w-[250px] h-[240px] border-r-2 border-dashed border-slate-500"></div>
+          
+          <!-- Room label -->
+          <div class="absolute top-[10px] left-1/2 -translate-x-1/2 text-[10px] text-slate-400 uppercase tracking-wider">Living Room · 5.2m × 4.8m</div>
+          
+          <!-- North indicator -->
+          <div class="absolute top-[15px] left-[55px] text-[10px] text-slate-500">N ↑</div>
+
+          <!-- Furniture Items placed -->
+          <!-- Sofa (against north wall) -->
+          <div class="absolute top-[45px] left-[100px] w-[140px] h-[28px] bg-teal-700/60 border border-teal-400 rounded flex items-center justify-between px-2 cursor-grab hover:bg-teal-600/60" title="Drag to move">
+            <span class="text-xs">🛋️</span>
+            <span class="text-[9px] text-teal-200">Sofa</span>
+            <span class="text-[8px] text-teal-400">2.0m</span>
+          </div>
+          <!-- Coffee table -->
+          <div class="absolute top-[130px] left-[150px] w-[80px] h-[24px] bg-amber-700/60 border border-amber-400 rounded flex items-center justify-between px-2 cursor-grab hover:bg-amber-600/60">
+            <span class="text-xs">🪑</span>
+            <span class="text-[9px] text-amber-200">Table</span>
+          </div>
+          <!-- Rug -->
+          <div class="absolute top-[105px] left-[125px] w-[130px] h-[60px] bg-stone-700/40 border border-stone-500 border-dashed rounded flex items-center justify-center">
+            <span class="text-[9px] text-stone-400">🟫 Rug (1.8m × 1.2m)</span>
+          </div>
+          <!-- Floor lamp -->
+          <div class="absolute top-[80px] right-[100px] w-[16px] h-[16px] bg-yellow-600/60 border border-yellow-400 rounded-full flex items-center justify-center cursor-grab hover:bg-yellow-500/60">
+            <span class="text-[8px]">💡</span>
+          </div>
+          <!-- TV console -->
+          <div class="absolute bottom-[55px] left-[150px] w-[100px] h-[22px] bg-slate-700/60 border border-slate-400 rounded flex items-center justify-between px-2 cursor-grab hover:bg-slate-600/60">
+            <span class="text-xs">📺</span>
+            <span class="text-[9px] text-slate-200">TV Console</span>
+          </div>
+          <!-- Plant -->
+          <div class="absolute bottom-[55px] right-[120px] w-[14px] h-[14px] bg-green-600/60 border border-green-400 rounded-full flex items-center justify-center cursor-grab hover:bg-green-500/60">
+            <span class="text-[8px]">🪴</span>
+          </div>
+
+          <!-- Item being dragged (ghost preview) -->
+          <div class="absolute top-[220px] left-[130px] w-[140px] h-[28px] bg-teal-700/20 border-2 border-dashed border-teal-400/50 rounded flex items-center justify-center cursor-grabbing opacity-40">
+            <span class="text-[9px] text-teal-300">🛋️ Sofa (dragging...)</span>
+          </div>
+
+          <!-- Drag handle indicator on sofa -->
+          <div class="absolute top-[49px] left-[220px] w-3 h-3 bg-teal-400 rounded-full cursor-grab shadow-lg shadow-teal-400/50 flex items-center justify-center">
+            <span class="text-[6px] text-white">⣿</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Room info bar -->
+      <div class="absolute bottom-4 left-4 bg-slate-800/80 rounded px-3 py-2 text-[10px] text-slate-400 space-y-0.5">
+        <div><span class="text-slate-500">Items placed:</span> <span class="text-teal-300">6</span></div>
+        <div><span class="text-slate-500">Wall anchors:</span> <span class="text-teal-300">2</span></div>
+        <div><span class="text-slate-500">Overlaps:</span> <span class="text-emerald-400">None ✓</span></div>
+      </div>
+    </div>
+
+    <!-- Right: Catalog + Item Properties -->
+    <div class="w-80 bg-slate-850 border-l border-slate-700 flex flex-col">
+      <!-- Template header -->
+      <div class="p-4 border-b border-slate-700">
+        <div class="grid grid-cols-2 gap-2">
+          <div class="col-span-2">
+            <label class="text-[10px] text-slate-400 block mb-0.5">Template Name</label>
+            <input type="text" value="Scandi Living Set A" class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs">
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400 block mb-0.5">Room Category</label>
+            <select class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs">
+              <option selected>Living</option>
+              <option>Bedroom</option>
+              <option>Dining</option>
+              <option>Kitchen</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400 block mb-0.5">Style Tag</label>
+            <select class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs">
+              <option selected>Scandinavian</option>
+              <option>Japandi</option>
+              <option>Industrial</option>
+              <option>— Universal —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Catalog -->
+      <div class="flex-1 overflow-y-auto p-4">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Furniture Catalog</span>
+          <span class="text-[10px] text-slate-500">Drag items into room</span>
+        </div>
+        <input type="text" placeholder="🔍 Search items..." class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs mb-2">
+
+        <div class="space-y-1">
+          <div class="text-[9px] text-slate-500 uppercase mt-2">Seating</div>
+          <div class="flex items-center gap-2 bg-slate-700/30 px-2 py-1.5 rounded cursor-grab hover:bg-slate-700/50">
+            <span>🛋️</span>
+            <span class="flex-1 text-xs">3-Seater Sofa</span>
+            <span class="text-[9px] text-slate-500">2.0m</span>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-700/30 px-2 py-1.5 rounded cursor-grab hover:bg-slate-700/50">
+            <span>🛋️</span>
+            <span class="flex-1 text-xs">Loveseat</span>
+            <span class="text-[9px] text-slate-500">1.5m</span>
+          </div>
+
+          <div class="text-[9px] text-slate-500 uppercase mt-2">Tables</div>
+          <div class="flex items-center gap-2 bg-slate-700/30 px-2 py-1.5 rounded cursor-grab hover:bg-slate-700/50">
+            <span>🪑</span>
+            <span class="flex-1 text-xs">Coffee Table (oval)</span>
+            <span class="text-[9px] text-slate-500">1.2m</span>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-700/30 px-2 py-1.5 rounded cursor-grab hover:bg-slate-700/50">
+            <span>🪑</span>
+            <span class="flex-1 text-xs">Side Table</span>
+            <span class="text-[9px] text-slate-500">0.5m</span>
+          </div>
+
+          <div class="text-[9px] text-slate-500 uppercase mt-2">Lighting</div>
+          <div class="flex items-center gap-2 bg-slate-700/30 px-2 py-1.5 rounded cursor-grab hover:bg-slate-700/50">
+            <span>💡</span>
+            <span class="flex-1 text-xs">Floor Lamp</span>
+            <span class="text-[9px] text-slate-500">0.4m</span>
+          </div>
+
+          <div class="text-[9px] text-slate-500 uppercase mt-2">Decor</div>
+          <div class="flex items-center gap-2 bg-slate-700/30 px-2 py-1.5 rounded cursor-grab hover:bg-slate-700/50">
+            <span>🟫</span>
+            <span class="flex-1 text-xs">Tatami-style Rug</span>
+            <span class="text-[9px] text-slate-500">1.8m</span>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-700/30 px-2 py-1.5 rounded cursor-grab hover:bg-slate-700/50">
+            <span>🪴</span>
+            <span class="flex-1 text-xs">Monstera Plant</span>
+            <span class="text-[9px] text-slate-500">0.5m</span>
+          </div>
+
+          <div class="text-[9px] text-slate-500 uppercase mt-2">Storage</div>
+          <div class="flex items-center gap-2 bg-slate-700/30 px-2 py-1.5 rounded cursor-grab hover:bg-slate-700/50">
+            <span>📺</span>
+            <span class="flex-1 text-xs">TV Console</span>
+            <span class="text-[9px] text-slate-500">1.8m</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected item properties -->
+      <div class="p-4 border-t border-slate-700 bg-slate-800">
+        <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">🛋️ Sofa: Position</div>
+        <div class="grid grid-cols-3 gap-1 text-[10px]">
+          <div>
+            <label class="text-slate-500">X offset</label>
+            <input type="text" value="0.5m" class="w-full bg-slate-700 border border-slate-600 rounded px-1 py-0.5 text-xs">
+          </div>
+          <div>
+            <label class="text-slate-500">Rotation</label>
+            <select class="w-full bg-slate-700 border border-slate-600 rounded px-1 py-0.5 text-xs">
+              <option selected>0°</option>
+              <option>45°</option>
+              <option>90°</option>
+              <option>180°</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-slate-500">Anchor</label>
+            <select class="w-full bg-slate-700 border border-slate-600 rounded px-1 py-0.5 text-xs">
+              <option selected>Against wall</option>
+              <option>Facing wall</option>
+              <option>Center</option>
+              <option>None</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
