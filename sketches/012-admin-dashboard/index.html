@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white font-['Inter',system-ui,sans-serif] min-h-screen">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-56 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0">
+      <div class="p-4 border-b border-slate-700">
+        <div class="text-lg font-bold text-amber-400">⚙️ Admin</div>
+      </div>
+      <nav class="flex-1 p-2 space-y-1">
+        <a href="#" class="flex items-center gap-2 text-sm bg-slate-700/50 text-white px-3 py-2 rounded-lg">📊 Dashboard</a>
+        <a href="#" class="flex items-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/30 px-3 py-2 rounded-lg">🏗️ BTO Projects</a>
+        <a href="#" class="flex items-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/30 px-3 py-2 rounded-lg">🪑 Furniture Templates</a>
+        <a href="#" class="flex items-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/30 px-3 py-2 rounded-lg">📦 Furniture Catalog</a>
+        <a href="#" class="flex items-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/30 px-3 py-2 rounded-lg">🎨 Style Presets</a>
+        <a href="#" class="flex items-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/30 px-3 py-2 rounded-lg">👥 Users</a>
+      </nav>
+      <div class="p-3 border-t border-slate-700">
+        <div class="text-xs text-slate-500">Logged in as Johnathan</div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="p-6">
+        <h1 class="text-xl font-bold mb-6">Dashboard</h1>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-4 gap-4 mb-6">
+          <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
+            <div class="text-2xl font-bold text-teal-300">12</div>
+            <div class="text-xs text-slate-400">BTO Projects</div>
+          </div>
+          <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
+            <div class="text-2xl font-bold text-teal-300">24</div>
+            <div class="text-xs text-slate-400">Flat Models</div>
+          </div>
+          <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
+            <div class="text-2xl font-bold text-teal-300">8</div>
+            <div class="text-xs text-slate-400">Furniture Templates</div>
+          </div>
+          <div class="bg-slate-800 rounded-xl border border-slate-700 p-4">
+            <div class="text-2xl font-bold text-teal-300">156</div>
+            <div class="text-xs text-slate-400">Total Users</div>
+          </div>
+        </div>
+
+        <!-- Waitlist alert -->
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-medium text-amber-300">📋 3 waitlist entries</div>
+            <div class="text-xs text-slate-400 mt-0.5">Projects not yet in library: Clementi Ridges (2), Punggol North (1)</div>
+          </div>
+          <button class="bg-amber-600 text-white text-xs px-3 py-1.5 rounded hover:bg-amber-500">View →</button>
+        </div>
+
+        <!-- Recent BTO Projects -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-slate-300">BTO Projects</h2>
+            <button class="text-xs text-teal-400 hover:text-teal-300">+ New Project</button>
+          </div>
+          <div class="space-y-2">
+            <div class="bg-slate-800 rounded-lg border border-slate-700 p-3 flex items-center justify-between">
+              <div>
+                <span class="text-sm font-medium">Verandah Kallang 2024</span>
+                <span class="text-xs text-slate-500 ml-2">Kallang · 4 models</span>
+              </div>
+              <span class="bg-green-600/20 text-green-400 text-[10px] px-2 py-0.5 rounded">Published</span>
+            </div>
+            <div class="bg-slate-800 rounded-lg border border-slate-700 p-3 flex items-center justify-between">
+              <div>
+                <span class="text-sm font-medium">Queenstown Project 2024</span>
+                <span class="text-xs text-slate-500 ml-2">Queenstown · 3 models</span>
+              </div>
+              <span class="bg-green-600/20 text-green-400 text-[10px] px-2 py-0.5 rounded">Published</span>
+            </div>
+            <div class="bg-slate-800 rounded-lg border border-slate-700 p-3 flex items-center justify-between">
+              <div>
+                <span class="text-sm font-medium">Clementi Ridges 2025</span>
+                <span class="text-xs text-slate-500 ml-2">Clementi · 2 models</span>
+              </div>
+              <span class="bg-amber-600/20 text-amber-400 text-[10px] px-2 py-0.5 rounded">Draft</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Users -->
+        <div>
+          <h2 class="text-sm font-semibold text-slate-300 mb-3">Recent Users</h2>
+          <div class="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-slate-700/50 text-xs text-slate-400 uppercase">
+                  <th class="text-left px-4 py-2 font-medium">Name</th>
+                  <th class="text-left px-4 py-2 font-medium">Email</th>
+                  <th class="text-left px-4 py-2 font-medium">Projects</th>
+                  <th class="text-left px-4 py-2 font-medium">Joined</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-700">
+                <tr class="hover:bg-slate-700/20">
+                  <td class="px-4 py-2">Sarah Lim</td>
+                  <td class="px-4 py-2 text-slate-400">sarah@example.com</td>
+                  <td class="px-4 py-2">2</td>
+                  <td class="px-4 py-2 text-slate-400">1 day ago</td>
+                </tr>
+                <tr class="hover:bg-slate-700/20">
+                  <td class="px-4 py-2">Marcus Tan</td>
+                  <td class="px-4 py-2 text-slate-400">marcus@example.com</td>
+                  <td class="px-4 py-2">1</td>
+                  <td class="px-4 py-2 text-slate-400">3 days ago</td>
+                </tr>
+                <tr class="hover:bg-slate-700/20">
+                  <td class="px-4 py-2">Priya Nair</td>
+                  <td class="px-4 py-2 text-slate-400">priya@example.com</td>
+                  <td class="px-4 py-2">3</td>
+                  <td class="px-4 py-2 text-slate-400">5 days ago</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

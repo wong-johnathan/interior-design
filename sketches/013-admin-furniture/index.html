@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Furniture Templates</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white font-['Inter',system-ui,sans-serif] min-h-screen">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-56 bg-slate-800 border-r border-slate-700 flex flex-col shrink-0">
+      <div class="p-4 border-b border-slate-700">
+        <div class="text-lg font-bold text-amber-400">⚙️ Admin</div>
+      </div>
+      <nav class="flex-1 p-2 space-y-1">
+        <a href="#" class="flex items-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/30 px-3 py-2 rounded-lg">📊 Dashboard</a>
+        <a href="#" class="flex items-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/30 px-3 py-2 rounded-lg">🏗️ BTO Projects</a>
+        <a href="#" class="flex items-center gap-2 text-sm bg-slate-700/50 text-white px-3 py-2 rounded-lg">🪑 Furniture Templates</a>
+        <a href="#" class="flex items-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/30 px-3 py-2 rounded-lg">📦 Furniture Catalog</a>
+        <a href="#" class="flex items-center gap-2 text-sm text-slate-400 hover:text-white hover:bg-slate-700/30 px-3 py-2 rounded-lg">🎨 Style Presets</a>
+      </nav>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-1 overflow-y-auto p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h1 class="text-xl font-bold">🪑 Furniture Templates</h1>
+        <button class="bg-teal-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-teal-500">+ New Template</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-2 mb-4">
+        <select class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-xs">
+          <option>All Rooms</option>
+          <option>Living</option>
+          <option>Bedroom</option>
+          <option>Dining</option>
+          <option>Kitchen</option>
+        </select>
+        <select class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-xs">
+          <option>All Styles</option>
+          <option>Scandinavian</option>
+          <option>Japandi</option>
+          <option>Industrial</option>
+        </select>
+        <select class="bg-slate-800 border border-slate-700 rounded px-3 py-1.5 text-xs">
+          <option>All Status</option>
+          <option>Published</option>
+          <option>Draft</option>
+        </select>
+      </div>
+
+      <!-- Template list -->
+      <div class="space-y-2">
+        <div class="bg-slate-800 rounded-lg border border-slate-700 p-4 flex items-center gap-4">
+          <div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center text-2xl">🛋️</div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">Scandi Living Room Set</div>
+            <div class="text-xs text-slate-400">Living · Scandinavian · 6 items</div>
+          </div>
+          <span class="bg-green-600/20 text-green-400 text-[10px] px-2 py-0.5 rounded">Published</span>
+          <button class="text-xs text-slate-400 hover:text-white">Edit</button>
+        </div>
+
+        <div class="bg-slate-800 rounded-lg border border-slate-700 p-4 flex items-center gap-4">
+          <div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center text-2xl">🛋️</div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">Japandi Living Room Set</div>
+            <div class="text-xs text-slate-400">Living · Japandi · 5 items</div>
+          </div>
+          <span class="bg-green-600/20 text-green-400 text-[10px] px-2 py-0.5 rounded">Published</span>
+          <button class="text-xs text-slate-400 hover:text-white">Edit</button>
+        </div>
+
+        <div class="bg-slate-800 rounded-lg border border-slate-700 p-4 flex items-center gap-4">
+          <div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center text-2xl">🛏️</div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">Scandi Master Bedroom Set</div>
+            <div class="text-xs text-slate-400">MBR · Scandinavian · 4 items</div>
+          </div>
+          <span class="bg-green-600/20 text-green-400 text-[10px] px-2 py-0.5 rounded">Published</span>
+          <button class="text-xs text-slate-400 hover:text-white">Edit</button>
+        </div>
+
+        <div class="bg-slate-800 rounded-lg border border-slate-700 p-4 flex items-center gap-4">
+          <div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center text-2xl">🍽️</div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">Universal Dining Set</div>
+            <div class="text-xs text-slate-400">Dining · Universal · 3 items</div>
+          </div>
+          <span class="bg-amber-600/20 text-amber-400 text-[10px] px-2 py-0.5 rounded">Draft</span>
+          <button class="text-xs text-slate-400 hover:text-white">Edit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

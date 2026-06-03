@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Before / After Slider</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white font-['Inter',system-ui,sans-serif] min-h-screen flex items-center justify-center p-6">
+  <div class="max-w-2xl w-full">
+    <!-- Breadcrumb -->
+    <div class="text-xs text-slate-500 mb-6">
+      <span class="text-slate-400">Renders</span>
+      <span class="mx-1">›</span>
+      <span class="text-teal-300">Living Room</span>
+    </div>
+
+    <!-- Room selector tabs -->
+    <div class="flex gap-2 mb-4">
+      <button class="bg-teal-600 px-4 py-1.5 rounded-full text-xs font-medium">Living Room</button>
+      <button class="bg-slate-700 px-4 py-1.5 rounded-full text-xs text-slate-300 hover:bg-slate-600">MBR</button>
+      <button class="bg-slate-700 px-4 py-1.5 rounded-full text-xs text-slate-300 hover:bg-slate-600">Kitchen</button>
+      <button class="bg-slate-700 px-4 py-1.5 rounded-full text-xs text-slate-300 hover:bg-slate-600">Bed 2</button>
+    </div>
+
+    <!-- Angle selector -->
+    <div class="flex gap-2 mb-4">
+      <button class="bg-teal-600/20 text-teal-300 px-3 py-1 rounded text-[10px] border border-teal-600/30">Corner View</button>
+      <button class="bg-slate-700 text-slate-400 px-3 py-1 rounded text-[10px] hover:bg-slate-600">Entrance View</button>
+    </div>
+
+    <!-- Before/After comparison -->
+    <div class="relative bg-slate-800 rounded-xl overflow-hidden border border-slate-700 aspect-[16/10]">
+      <!-- Left: Before (empty) -->
+      <div class="absolute inset-0 w-1/2 overflow-hidden border-r-2 border-white z-10">
+        <div class="absolute inset-0 flex items-center justify-center bg-slate-700">
+          <div class="text-center">
+            <div class="text-5xl mb-3">🏠</div>
+            <div class="text-sm text-slate-400">Empty 3D Model</div>
+            <div class="text-xs text-slate-500 mt-1">Before styling</div>
+          </div>
+        </div>
+        <div class="absolute bottom-3 left-3 bg-black/50 text-white text-[10px] px-2 py-1 rounded">
+          Empty Shell
+        </div>
+      </div>
+
+      <!-- Right: After (styled) -->
+      <div class="absolute inset-0 left-1/2">
+        <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-teal-900/30 to-slate-800">
+          <div class="text-center">
+            <div class="text-5xl mb-3">🛋️</div>
+            <div class="text-sm text-teal-300">Styled Render</div>
+            <div class="text-xs text-slate-400 mt-1">Japandi · AI-generated</div>
+          </div>
+        </div>
+        <div class="absolute bottom-3 right-3 bg-black/50 text-white text-[10px] px-2 py-1 rounded">
+          AI Styled
+        </div>
+      </div>
+
+      <!-- Slider handle (draggable divider) -->
+      <div class="absolute top-0 bottom-0 left-1/2 w-1 bg-white z-20 cursor-ew-resize hover:bg-teal-400 transition-colors" style="transform: translateX(-0.5px);">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center cursor-ew-resize">
+          <span class="text-slate-700 text-xs font-bold">⇔</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons below -->
+    <div class="flex gap-3 mt-4 justify-center">
+      <button class="bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs hover:bg-slate-600 flex items-center gap-1">📥 Download HD</button>
+      <button class="bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs hover:bg-slate-600 flex items-center gap-1">🔗 Share Link</button>
+      <button class="bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-xs hover:bg-slate-600 flex items-center gap-1">🔄 Regenerate</button>
+    </div>
+  </div>
+</body>
+</html>

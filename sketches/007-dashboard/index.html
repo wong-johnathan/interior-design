@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 font-['Inter',system-ui,sans-serif] min-h-screen">
+  <nav class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-6">
+      <span class="text-lg font-bold text-teal-700">🏡 HDB Studio</span>
+      <a href="#" class="text-sm text-slate-500 hover:text-slate-700">Browse BTOs</a>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-slate-500">Johnathan</span>
+      <span class="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-medium text-sm">JW</span>
+    </div>
+  </nav>
+
+  <div class="max-w-5xl mx-auto px-6 py-8">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold">My Projects</h1>
+        <p class="text-sm text-slate-500 mt-1">3 projects — last updated today</p>
+      </div>
+      <a href="#" class="bg-teal-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-teal-700 transition">+ New Project</a>
+    </div>
+
+    <!-- Project Cards -->
+    <div class="space-y-3">
+      <div class="bg-white rounded-xl border border-slate-200 p-5 hover:border-teal-300 hover:shadow-sm transition cursor-pointer">
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="font-semibold">My Verandah Kallang 4-Room</h3>
+            <p class="text-sm text-slate-500 mt-0.5">Verandah Kallang 2024 · 4-Room Model A</p>
+          </div>
+          <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-medium">Renders Ready</span>
+        </div>
+        <div class="flex items-center gap-4 mt-3 text-xs text-slate-400">
+          <span>🎨 Japandi + Vintage</span>
+          <span>🖼️ 6 renders</span>
+          <span>Updated 2h ago</span>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <div class="w-12 h-8 bg-slate-100 rounded"></div>
+          <div class="w-12 h-8 bg-slate-100 rounded"></div>
+          <div class="w-12 h-8 bg-slate-100 rounded"></div>
+          <span class="text-xs text-slate-400 self-center ml-1">+3 more</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-5 hover:border-teal-300 hover:shadow-sm transition cursor-pointer">
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="font-semibold">Queenstown Scandi</h3>
+            <p class="text-sm text-slate-500 mt-0.5">Queenstown Project 2024 · 5-Room Model B</p>
+          </div>
+          <span class="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-medium">Sample Ready</span>
+        </div>
+        <div class="flex items-center gap-4 mt-3 text-xs text-slate-400">
+          <span>❄️ Scandinavian</span>
+          <span>🖼️ 1 sample</span>
+          <span>Updated yesterday</span>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <div class="w-12 h-8 bg-slate-100 rounded"></div>
+          <span class="text-xs text-slate-400 self-center ml-1">Sample only</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 p-5 opacity-60">
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="font-semibold">Tampines Greenwalk</h3>
+            <p class="text-sm text-slate-500 mt-0.5">Tampines Greenwalk 2025 · 4-Room</p>
+          </div>
+          <span class="bg-slate-100 text-slate-500 text-xs px-2 py-1 rounded font-medium">In Progress</span>
+        </div>
+        <div class="flex items-center gap-4 mt-3 text-xs text-slate-400">
+          <span>Styled 3 of 4 rooms</span>
+          <span>Furniture pending</span>
+          <span>Started last week</span>
+        </div>
+        <div class="mt-3 w-full bg-slate-100 rounded-full h-1.5">
+          <div class="bg-teal-500 h-1.5 rounded-full w-3/5"></div>
+        </div>
+        <div class="text-xs text-slate-400 mt-1">60% complete</div>
+      </div>
+    </div>
+
+    <!-- Empty state (hidden if projects exist) -->
+    <div class="hidden text-center py-16">
+      <div class="text-5xl mb-4">🏠</div>
+      <h2 class="text-lg font-semibold mb-2">No projects yet</h2>
+      <p class="text-sm text-slate-500 mb-6">Select a BTO project and start designing your dream home.</p>
+      <a href="#" class="bg-teal-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium inline-block">Browse BTO Projects</a>
+    </div>
+  </div>
+</body>
+</html>

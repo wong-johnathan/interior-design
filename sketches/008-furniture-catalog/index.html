@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Furniture Catalog Panel</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white font-['Inter',system-ui,sans-serif] min-h-screen flex">
+  <!-- Main viewport area -->
+  <div class="flex-1 bg-slate-800 flex items-center justify-center">
+    <div class="text-slate-500 text-center">
+      <div class="text-6xl mb-4">🏠</div>
+      <div class="text-sm">3D Viewport (Tweak Mode)</div>
+      <div class="text-xs text-slate-600 mt-1">Grid overlay visible · Drag to move furniture</div>
+    </div>
+  </div>
+
+  <!-- Catalog Sheet (right side) -->
+  <div class="w-80 bg-slate-850 border-l border-slate-700 flex flex-col">
+    <!-- Header -->
+    <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+      <h2 class="font-semibold text-sm">🪑 Furniture Catalog</h2>
+      <button class="text-slate-400 hover:text-white text-lg">✕</button>
+    </div>
+
+    <!-- Search -->
+    <div class="p-3 border-b border-slate-700">
+      <input type="text" placeholder="Search items..." class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-400">
+    </div>
+
+    <!-- Category + Style filters -->
+    <div class="p-3 border-b border-slate-700 flex gap-2">
+      <select class="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs flex-1">
+        <option>All Categories</option>
+        <option>Seating</option>
+        <option>Tables</option>
+        <option>Lighting</option>
+        <option>Decor</option>
+        <option>Storage</option>
+      </select>
+      <select class="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs flex-1">
+        <option>All Styles</option>
+        <option>Scandinavian</option>
+        <option>Japandi</option>
+        <option>Industrial</option>
+        <option>Modern</option>
+      </select>
+    </div>
+
+    <!-- Item grid -->
+    <div class="flex-1 overflow-y-auto p-3 space-y-2">
+      <div class="bg-slate-700/30 rounded-lg p-3 flex items-center gap-3 hover:bg-slate-700/50 cursor-pointer border border-transparent hover:border-teal-500/50 transition">
+        <div class="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center text-2xl">🛋️</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate">3-Seater Sofa</div>
+          <div class="text-[10px] text-slate-400">Japandi · 2.0m × 0.9m</div>
+        </div>
+        <span class="text-[10px] text-teal-400">Drag ↕</span>
+      </div>
+
+      <div class="bg-slate-700/30 rounded-lg p-3 flex items-center gap-3 hover:bg-slate-700/50 cursor-pointer border border-transparent hover:border-teal-500/50 transition">
+        <div class="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center text-2xl">🪑</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate">Oval Coffee Table</div>
+          <div class="text-[10px] text-slate-400">Japandi · 1.2m × 0.7m</div>
+        </div>
+        <span class="text-[10px] text-teal-400">Drag ↕</span>
+      </div>
+
+      <div class="bg-slate-700/30 rounded-lg p-3 flex items-center gap-3 hover:bg-slate-700/50 cursor-pointer border border-transparent hover:border-teal-500/50 transition">
+        <div class="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center text-2xl">🟫</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate">Tatami-style Rug</div>
+          <div class="text-[10px] text-slate-400">Japandi · 2.0m × 1.5m</div>
+        </div>
+        <span class="text-[10px] text-teal-400">Drag ↕</span>
+      </div>
+
+      <div class="bg-slate-700/30 rounded-lg p-3 flex items-center gap-3 hover:bg-slate-700/50 cursor-pointer border border-transparent hover:border-teal-500/50 transition">
+        <div class="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center text-2xl">💡</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate">Floor Lamp</div>
+          <div class="text-[10px] text-slate-400">Universal · 0.4m × 0.4m</div>
+        </div>
+        <span class="text-[10px] text-teal-400">Drag ↕</span>
+      </div>
+
+      <div class="bg-slate-700/30 rounded-lg p-3 flex items-center gap-3 hover:bg-slate-700/50 cursor-pointer border border-transparent hover:border-teal-500/50 transition">
+        <div class="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center text-2xl">🪴</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate">Monstera Plant</div>
+          <div class="text-[10px] text-slate-400">Universal · 0.5m × 0.5m</div>
+        </div>
+        <span class="text-[10px] text-teal-400">Drag ↕</span>
+      </div>
+
+      <div class="bg-slate-700/30 rounded-lg p-3 flex items-center gap-3 hover:bg-slate-700/50 cursor-pointer border border-transparent hover:border-teal-500/50 transition">
+        <div class="w-12 h-12 bg-slate-600 rounded-lg flex items-center justify-center text-2xl">🗄️</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate">TV Console</div>
+          <div class="text-[10px] text-slate-400">Scandi · 1.8m × 0.4m</div>
+        </div>
+        <span class="text-[10px] text-teal-400">Drag ↕</span>
+      </div>
+    </div>
+
+    <!-- Currently selected context -->
+    <div class="p-3 border-t border-slate-700 bg-slate-800">
+      <div class="text-[10px] text-slate-400 mb-1">Currently in: Living Room</div>
+      <div class="text-xs text-slate-300">Drag items into the room to place them</div>
+    </div>
+  </div>
+</body>
+</html>

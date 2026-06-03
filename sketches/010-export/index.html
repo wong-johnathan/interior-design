@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Export Dialog</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900/80 min-h-screen flex items-center justify-center font-['Inter',system-ui,sans-serif]">
+  <!-- Modal backdrop -->
+  <div class="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md mx-4 p-6 shadow-2xl">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-white">📥 Export Model</h2>
+      <button class="text-slate-400 hover:text-white text-lg">✕</button>
+    </div>
+
+    <!-- What to export -->
+    <div class="mb-4">
+      <label class="text-sm text-slate-300 block mb-2">What to export:</label>
+      <div class="space-y-2">
+        <label class="flex items-center gap-3 bg-slate-700/30 p-3 rounded-lg cursor-pointer hover:bg-slate-700/50 transition">
+          <input type="radio" name="export-content" checked class="accent-teal-500">
+          <div>
+            <div class="text-sm text-white">Empty shell (walls only)</div>
+            <div class="text-[10px] text-slate-400">Just the building structure, no furniture</div>
+          </div>
+        </label>
+        <label class="flex items-center gap-3 bg-slate-700/30 p-3 rounded-lg cursor-pointer hover:bg-slate-700/50 transition">
+          <input type="radio" name="export-content" class="accent-teal-500">
+          <div>
+            <div class="text-sm text-white">With current furniture</div>
+            <div class="text-[10px] text-slate-400">Includes all placed furniture</div>
+          </div>
+        </label>
+        <label class="flex items-center gap-3 bg-slate-700/30 p-3 rounded-lg cursor-pointer hover:bg-slate-700/50 transition">
+          <input type="radio" name="export-content" class="accent-teal-500">
+          <div>
+            <div class="text-sm text-white">With materials only</div>
+            <div class="text-[10px] text-slate-400">Walls, floors, colours — no furniture</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Format -->
+    <div class="mb-6">
+      <label class="text-sm text-slate-300 block mb-2">Format:</label>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="bg-teal-600/20 border border-teal-500 rounded-lg p-3 text-center cursor-pointer">
+          <input type="radio" name="format" checked class="sr-only">
+          <div class="text-sm font-medium text-teal-300">Collada (.dae)</div>
+          <div class="text-[10px] text-slate-400">SketchUp Pro</div>
+        </label>
+        <label class="bg-slate-700/30 border border-slate-600 rounded-lg p-3 text-center cursor-pointer hover:border-slate-500 transition">
+          <input type="radio" name="format" class="sr-only">
+          <div class="text-sm text-slate-300">OBJ (.obj)</div>
+          <div class="text-[10px] text-slate-400">Universal</div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="bg-slate-700/30 rounded-lg p-3 mb-6">
+      <div class="text-xs text-slate-300 font-medium mb-1">💡 Tips</div>
+      <ul class="text-[10px] text-slate-400 space-y-0.5 list-disc list-inside">
+        <li>Opens directly in SketchUp Pro 2022+</li>
+        <li>Each room is a named group</li>
+        <li>Don't rename or delete room groups if you plan to re-import</li>
+      </ul>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex gap-3">
+      <button class="flex-1 bg-slate-700 text-slate-300 py-2.5 rounded-lg text-sm hover:bg-slate-600 transition">Cancel</button>
+      <button class="flex-1 bg-teal-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-teal-500 transition">Download ↓</button>
+    </div>
+  </div>
+</body>
+</html>
