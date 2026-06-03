@@ -10,7 +10,6 @@
 -- ─── Extensions ──────────────────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-CREATE EXTENSION IF NOT EXISTS "postgis";     -- Spatial queries for room geometry
 
 -- ─── Application User ────────────────────────────────────────────
 -- Note: The DB_USER is created via POSTGRES_USER env var in docker-compose.
@@ -28,7 +27,6 @@ ALTER SYSTEM SET effective_io_concurrency = 200;
 -- ─── Verify Extensions ───────────────────────────────────────────
 DO $$
 BEGIN
-    RAISE NOTICE 'PostGIS version: %', (SELECT PostGIS_Version());
     RAISE NOTICE 'uuid-ossp loaded: %', (SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'uuid-ossp'));
     RAISE NOTICE 'pg_trgm loaded: %', (SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'));
 END

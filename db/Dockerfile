@@ -1,7 +1,9 @@
 # ─────────────────────────────────────────────────────────────────────
-# PostgreSQL 16 with PostGIS — Database Service
+# PostgreSQL 16 — Database Service
+# ⚠ Now using image: postgres:16 directly in docker-compose.
+#    This Dockerfile is kept for standalone use.
 # ─────────────────────────────────────────────────────────────────────
-FROM postgis/postgres:16-3.4
+FROM postgres:16
 
 # Copy initialization scripts
 COPY init/01-init.sql /docker-entrypoint-initdb.d/01-init.sql

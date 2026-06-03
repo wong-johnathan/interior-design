@@ -146,12 +146,9 @@ services:
       retries: 3
       start_period: 20s
 
-  # ─── PostgreSQL 16 + PostGIS ────────────────────────────────────
+  # ─── PostgreSQL 16 (vanilla, no PostGIS) ─────────────────────────
   postgres:
-    build:
-      context: ./db
-      dockerfile: Dockerfile
-    image: hdb-db:latest
+    image: postgres:16
     container_name: hdb-postgres
     ports:
       - "5432:5432"
