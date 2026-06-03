@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { StudioBreadcrumb } from '@/components/layout/StudioBreadcrumb';
@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import ExportDialog from '@/components/export/ExportDialog';
 import { generateDefaultFloorPlan } from '@/lib/defaultRoomData';
 import { captureViewport } from '@/lib/viewportCapture';
+import { FurnitureCatalog } from '@/components/furniture/FurnitureCatalog';
+import { TweakModeOverlay } from '@/components/furniture/TweakModeOverlay';
+import { useFurnitureStore } from '@/stores/furnitureStore';
 import {
   Palette,
   Download,
@@ -21,6 +24,7 @@ import {
   X,
   Sparkles,
   Clock,
+  Pencil,
 } from 'lucide-react';
 
 // Dynamically import ThreeDViewport (SSR-safe for Three.js)
@@ -40,6 +44,14 @@ export default function StudioPage() {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const viewportContainerRef = useRef<HTMLDivElement>(null);
 
+  // Furniture store state
+  const isCatalogOpen = useFurnitureStore((s) => s.isCatalogOpen);
+  const isTweakMode = useFurnitureStore((s) => s.isTweakMode);
+  const setCatalogOpen = useFurnitureStore((s) => s.setCatalogOpen);
+  const setTweakMode = useFurnitureStore((s) => s.setTweakMode);
+  const toggleTweakMode = useFurnitureStore((s) => s.toggleTweakMode);
+  const placedItems = useFurnitureStore((s) => s.placedItems);
+
   const floorPlan = useMemo(() => generateDefaultFloorPlan(), []);
 
   const rooms = [
@@ -55,6 +67,18 @@ export default function StudioPage() {
     'mbr': { room: 'mbr', style: 'Japandi', colors: 'Walnut, cream', materials: 'Walnut, linen, wool', furniture: 'Platform bed, sliding closet', lighting: 'Dimmable, soft' },
     'bed2': { room: 'bed2', style: 'Scandi', colors: 'White, pastel accents', materials: 'Birch, cotton', furniture: 'Compact desk, bed', lighting: 'Natural, task lamp' },
   };
+
+  // Keyboard shortcut: press T to toggle tweak mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 't' && !e.ctrlKey && !e.metaKey && !e.target) {
+        e.preventDefault();
+        toggleTweakMode();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleTweakMode]);
 
   return (
     <div className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
@@ -85,20 +109,46 @@ export default function StudioPage() {
         </div>
 
         {/* Center: 3D Viewport */}
-        <div ref={viewportContainerRef} className="flex-1 bg-slate-800 relative">
+        <div ref={viewportContainerRef} className="flex-1 bg-slate-800 relative overflow-hidden">
           <ThreeDViewport
             wallSegments={floorPlan.walls}
             roomLabels={floorPlan.roomLabels}
             activeRoom={activeRoom}
           />
 
+          {/* Tweak Mode Overlay */}
+          <TweakModeOverlay enabled={isTweakMode} />
+
+          {/* Tweak mode indicator */}
+          {isTweakMode && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-teal-600/90 text-white text-[10px] px-3 py-1 rounded-full flex items-center gap-1.5 z-20">
+              <Pencil className="w-3 h-3" />
+              Tweak Mode — Click items to select, drag to move, G=grid, T=exit
+            </div>
+          )}
+
           {/* Floating Action Buttons */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 flex-wrap justify-center">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 flex-wrap justify-center z-20">
+            <Button
+              variant="secondary"
+              size="sm"
+              className={`text-xs flex items-center gap-1 ${
+                isTweakMode
+                  ? 'bg-teal-600 hover:bg-teal-500 text-white'
+                  : 'bg-slate-700 hover:bg-slate-600'
+              }`}
+              onClick={() => {
+                setTweakMode(!isTweakMode);
+              }}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              {isTweakMode ? 'Exit Tweak' : 'Tweak Mode'}
+            </Button>
             <Button
               variant="secondary"
               size="sm"
               className="bg-slate-700 hover:bg-slate-600 text-xs flex items-center gap-1"
-              onClick={() => router.push(`/studio/${projectId}?tab=furniture`)}
+              onClick={() => setCatalogOpen(true)}
             >
               <Sparkles className="w-3.5 h-3.5" />
               Auto-Furnish
@@ -149,11 +199,20 @@ export default function StudioPage() {
               variant="secondary"
               size="sm"
               className="bg-slate-700 hover:bg-slate-600 text-xs flex items-center gap-1"
+              onClick={() => setCatalogOpen(true)}
             >
               <Sofa className="w-3.5 h-3.5" />
               Catalog
             </Button>
           </div>
+
+          {/* Furniture count badge */}
+          {placedItems.length > 0 && (
+            <div className="absolute top-3 right-3 bg-slate-800/80 text-[10px] text-slate-300 px-2 py-1 rounded-md flex items-center gap-1.5 z-20 border border-slate-700">
+              <Sofa className="w-3 h-3 text-teal-400" />
+              {placedItems.length} item{placedItems.length !== 1 ? 's' : ''} placed
+            </div>
+          )}
         </div>
 
         {/* Right Panel: Design Summary (desktop) */}
@@ -165,6 +224,12 @@ export default function StudioPage() {
           />
         </div>
       </div>
+
+      {/* Furniture Catalog slide-out (overrides the right panel area) */}
+      <FurnitureCatalog
+        open={isCatalogOpen}
+        onOpenChange={setCatalogOpen}
+      />
 
       {/* Mobile: Chat toggle button */}
       {!isMobileChatOpen && (
