@@ -24,7 +24,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: development
-    image: hdb-frontend:latest
     container_name: hdb-frontend
     ports:
       - "3000:3000"
@@ -61,7 +60,6 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: development
-    image: hdb-backend:latest
     container_name: hdb-backend
     ports:
       - "4000:4000"
