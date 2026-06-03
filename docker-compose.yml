@@ -105,24 +105,7 @@ services:
     container_name: hdb-backend
     ports:
       - "4000:4000"
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
-      - DIRECT_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - CORS_ORIGIN=${APP_URL:-http://localhost}
-      - PORT=4000
-      - HOSTNAME=0.0.0.0
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-pro}
-      - R2_ENDPOINT=${R2_ENDPOINT}
-      - R2_REGION=${R2_REGION:-auto}
-      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
-      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
-      - R2_BUCKET_NAME=${R2_BUCKET_NAME:-hdb-interior-design}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - APP_URL=${APP_URL:-http://localhost}
+    env_file: ./backend/.env
     depends_on:
       postgres:
         condition: service_healthy
