@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTO Discovery</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900 font-['Inter',system-ui,sans-serif]">
+  <nav class="flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200">
+    <div class="text-lg font-bold text-teal-700">🏡 HDB Studio</div>
+    <div class="flex items-center gap-4 text-sm">
+      <span class="text-slate-500">Johnathan</span>
+      <span class="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center text-teal-700 font-medium text-xs">JW</span>
+    </div>
+  </nav>
+
+  <div class="max-w-5xl mx-auto px-6 py-8">
+    <!-- Breadcrumb -->
+    <div class="text-sm text-slate-400 mb-6">
+      <span class="text-teal-600 font-medium">BTO Projects</span>
+      <span class="mx-1">›</span>
+      <span class="text-slate-400">Select Model</span>
+      <span class="mx-1">›</span>
+      <span class="text-slate-300">Studio</span>
+    </div>
+
+    <h1 class="text-2xl font-bold mb-2">Find your BTO project</h1>
+    <p class="text-slate-500 mb-8">Select your project to see available floor plans and start designing.</p>
+
+    <!-- Search -->
+    <div class="flex gap-3 mb-6">
+      <div class="relative flex-1 max-w-md">
+        <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+        <input type="text" placeholder="Search BTO project name or location..." class="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-200">
+      </div>
+      <select class="border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white">
+        <option>All Years</option>
+        <option>2025</option>
+        <option>2024</option>
+      </select>
+      <select class="border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white">
+        <option>All Locations</option>
+        <option>Kallang</option>
+        <option>Queenstown</option>
+        <option>Clementi</option>
+      </select>
+    </div>
+
+    <!-- Project Cards -->
+    <div class="grid md:grid-cols-2 gap-4">
+      <!-- Verandah Kallang -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 hover:border-teal-400 hover:shadow-md transition cursor-pointer">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <h3 class="font-semibold text-lg">Verandah Kallang</h3>
+            <p class="text-sm text-slate-500">Kallang · 2024</p>
+          </div>
+          <span class="bg-teal-100 text-teal-700 text-xs px-2 py-1 rounded font-medium">4 models</span>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">4-Room</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">5-Room</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">3-Room</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Premium project near Kallang Riverside Park. 3 flat types, 4 layouts.</p>
+      </div>
+
+      <!-- Queenstown -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 hover:border-teal-400 hover:shadow-md transition cursor-pointer">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <h3 class="font-semibold text-lg">Queenstown Project</h3>
+            <p class="text-sm text-slate-500">Queenstown · 2024</p>
+          </div>
+          <span class="bg-teal-100 text-teal-700 text-xs px-2 py-1 rounded font-medium">3 models</span>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">4-Room</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">5-Room</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Mature estate with excellent connectivity. 2 flat types, 3 layouts.</p>
+      </div>
+
+      <!-- Clementi (draft) -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 opacity-60 cursor-not-allowed">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <h3 class="font-semibold text-lg">Clementi Ridges</h3>
+            <p class="text-sm text-slate-500">Clementi · 2025</p>
+          </div>
+          <span class="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded font-medium">Coming soon</span>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">4-Room</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">BTO project launching 2025. Layouts being added.</p>
+      </div>
+
+      <!-- Tampines -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 hover:border-teal-400 hover:shadow-md transition cursor-pointer">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <h3 class="font-semibold text-lg">Tampines Greenwalk</h3>
+            <p class="text-sm text-slate-500">Tampines · 2025</p>
+          </div>
+          <span class="bg-teal-100 text-teal-700 text-xs px-2 py-1 rounded font-medium">3 models</span>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">4-Room</span>
+          <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded">5-Room</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">New launch in the Tampines North area. 2 flat types, 3 layouts.</p>
+      </div>
+    </div>
+
+    <!-- Flat Model Selector (shown when project is clicked) -->
+    <div class="mt-8 bg-white rounded-xl border border-slate-200 p-5">
+      <div class="flex items-center gap-3 mb-4">
+        <button class="text-sm text-teal-600 hover:underline">← Back</button>
+        <h2 class="text-lg font-semibold">Verandah Kallang 2024</h2>
+      </div>
+      <div class="flex gap-4">
+        <div class="w-48 h-36 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-sm shrink-0">
+          <div class="text-center">
+            <div class="text-2xl mb-1">📐</div>
+            Floor Plan
+          </div>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm text-slate-600 mb-3">Select your flat model to start designing:</p>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="border border-teal-500 bg-teal-50 rounded-lg p-3 cursor-pointer">
+              <div class="font-medium text-sm">4-Room Model A</div>
+              <div class="text-xs text-slate-500">90 sqm · 3 bedrooms</div>
+              <span class="text-[10px] text-teal-600 mt-1 block">Selected ✓</span>
+            </div>
+            <div class="border border-slate-200 rounded-lg p-3 hover:border-teal-300 cursor-pointer">
+              <div class="font-medium text-sm">4-Room Model B</div>
+              <div class="text-xs text-slate-500">92 sqm · 3 bedrooms</div>
+            </div>
+            <div class="border border-slate-200 rounded-lg p-3 hover:border-teal-300 cursor-pointer">
+              <div class="font-medium text-sm">5-Room Model A</div>
+              <div class="text-xs text-slate-500">110 sqm · 4 bedrooms</div>
+            </div>
+          </div>
+          <button class="mt-4 bg-teal-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-teal-700 transition">Start Designing →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
