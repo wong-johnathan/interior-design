@@ -23,11 +23,17 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      target: runner
+      target: development
     image: hdb-frontend:latest
     container_name: hdb-frontend
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/next.config.ts:/app/next.config.ts
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tailwind.config.ts:/app/tailwind.config.ts
     environment:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=/api
@@ -54,11 +60,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: runner
+      target: development
     image: hdb-backend:latest
     container_name: hdb-backend
     ports:
       - "4000:4000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - ./backend/tsconfig.json:/app/tsconfig.json
     environment:
       - NODE_ENV=development
       - PORT=4000

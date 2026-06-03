@@ -10,26 +10,23 @@ WORKDIR /app
 # Install tini for proper signal handling
 RUN apk add --no-cache tini
 
-# Enable corepack for pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 # ─── Dependencies Stage ───────────────────────────────────────────
 FROM base AS deps
 
 # Copy only package files for layer caching
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 
 # Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+RUN npm ci --omit=dev
 
 # ─── Development Stage ────────────────────────────────────────────
 FROM base AS development
 
 # Copy all package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json package-lock.json ./
 
 # Install all dependencies (including dev)
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 # Copy source code
 COPY tsconfig.json ./
@@ -47,7 +44,7 @@ ENV NODE_ENV=development
 ENV PORT=4000
 
 # Development command with hot reload
-CMD ["pnpm", "run", "dev"]
+CMD ["npm", "run", "dev"]
 
 # ─── Build Stage ──────────────────────────────────────────────────
 FROM deps AS builder
@@ -64,7 +61,7 @@ COPY --from=development /app/node_modules ./node_modules
 RUN npx prisma generate
 
 # Build TypeScript
-RUN pnpm run build
+RUN npm run build
 
 # ─── Production Runner ────────────────────────────────────────────
 FROM node:22-alpine AS runner
@@ -84,7 +81,7 @@ COPY --from=builder /app/package.json ./
 
 # Create a health check script
 RUN echo '#!/bin/sh\n\
-wget --no-verbose --tries=1 --spider http://localhost:${PORT:-4000}/health || exit 1' \
+wget --no-verbose --tries=1 --spider http://localhost:${PORT:-4000}/api/health || exit 1' \
     > /healthcheck.sh && chmod +x /healthcheck.sh && chown appuser:appgroup /healthcheck.sh
 
 # Switch to non-root user
