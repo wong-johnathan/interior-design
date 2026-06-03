@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin - Room Annotation</title>
+<title>Admin - Wall Annotation</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-800 text-white font-['Inter',system-ui,sans-serif] h-screen flex flex-col overflow-hidden">
@@ -26,146 +26,195 @@
     <div class="flex-1 bg-slate-700 relative flex items-center justify-center">
       <!-- Floor plan image placeholder -->
       <div class="relative w-[500px] h-[400px] bg-slate-600 rounded-lg border-2 border-dashed border-slate-500">
-        <!-- Drawn rooms overlay -->
+        <!-- Wall segments overlay -->
         <div class="absolute inset-0">
-          <!-- Living Room -->
-          <div class="absolute top-10 left-8 w-40 h-32 border-2 border-teal-400 bg-teal-500/10 rounded flex items-center justify-center text-teal-300 text-xs font-medium cursor-pointer hover:bg-teal-500/20">
-            Living Room
-            <div class="absolute -top-3 -right-3 w-5 h-5 bg-teal-500 rounded-full flex items-center justify-center text-[10px]">◈</div>
+          <!-- Legend -->
+          <div class="absolute top-2 left-2 bg-slate-800/80 rounded px-2 py-1 space-y-0.5 text-[10px]">
+            <div class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-red-400 inline-block"></span> External</div>
+            <div class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-amber-400 inline-block" style="border-top: 1px dashed #000;"></span> Load-bearing</div>
+            <div class="flex items-center gap-1.5"><span class="w-4 h-0.5 bg-teal-400 inline-block"></span> Internal</div>
           </div>
-          <!-- MBR -->
-          <div class="absolute top-10 right-8 w-32 h-28 border-2 border-blue-400 bg-blue-500/10 rounded flex items-center justify-center text-blue-300 text-xs font-medium cursor-pointer">
-            MBR
+
+          <!-- External walls (flat boundary) — thick red lines -->
+          <div class="absolute top-[60px] left-[40px] w-[420px] h-1 bg-red-400/60"></div>
+          <div class="absolute top-[60px] left-[40px] w-1 h-[280px] bg-red-400/60"></div>
+          <div class="absolute top-[340px] left-[40px] w-[200px] h-1 bg-red-400/60"></div>
+          <div class="absolute top-[60px] right-[40px] w-1 h-[280px] bg-red-400/60"></div>
+          <div class="absolute top-[340px] right-[120px] w-1 h-[40px] bg-red-400/60"></div>
+          <div class="absolute top-[380px] right-[40px] w-[80px] h-1 bg-red-400/60"></div>
+
+          <!-- Load-bearing wall (hatched amber) -->
+          <div class="absolute top-[170px] left-[240px] w-[2px] h-[170px] bg-amber-400/80 cursor-pointer hover:bg-amber-400" style="background-image: repeating-linear-gradient(45deg, #FBBF24, #FBBF24 2px, transparent 2px, transparent 6px);">
+            <div class="absolute -top-5 left-1/2 -translate-x-1/2 text-[8px] text-amber-400 whitespace-nowrap">🧱 Load-bearing</div>
           </div>
-          <!-- Kitchen -->
-          <div class="absolute bottom-12 left-8 w-36 h-24 border-2 border-emerald-400 bg-emerald-500/10 rounded flex items-center justify-center text-emerald-300 text-xs font-medium cursor-pointer">
-            Kitchen
+
+          <!-- Internal walls (teal dashed) — selectable -->
+          <div class="absolute top-[60px] left-[240px] w-[2px] h-[110px] bg-teal-400 cursor-pointer hover:bg-teal-300 group" data-wall="living-mbr">
+            <div class="hidden group-hover:block absolute -right-16 top-1/2 -translate-y-1/2 bg-teal-900/90 text-[8px] px-1 py-0.5 rounded whitespace-nowrap">[Click to select]</div>
           </div>
-          <!-- Bomb Shelter -->
-          <div class="absolute bottom-12 right-8 w-20 h-16 border-2 border-amber-400 bg-amber-500/10 rounded flex items-center justify-center text-amber-300 text-xs font-medium cursor-pointer">
-            Bomb Shelter
+          <!-- Wall between Living and Kitchen -->
+          <div class="absolute top-[170px] left-[40px] w-[120px] h-[1px] bg-teal-400 cursor-pointer hover:bg-teal-300"></div>
+          <!-- Wall between MBR and Kitchen-side -->
+          <div class="absolute top-[170px] left-[240px] w-[1px] h-[170px] bg-teal-400 cursor-pointer hover:bg-teal-300"></div>
+          <!-- Wall between Kitchen and Bed 2 -->
+          <div class="absolute top-[280px] left-[120px] w-[160px] h-[1px] bg-teal-400 cursor-pointer hover:bg-teal-300"></div>
+          <!-- Wall between MBR and Bed 2 -->
+          <div class="absolute top-[60px] right-[120px] w-[1px] h-[110px] bg-teal-400 cursor-pointer hover:bg-teal-300"></div>
+
+          <!-- Selected wall highlight -->
+          <div class="absolute top-[60px] left-[240px] w-[2px] h-[110px] bg-teal-200 shadow-lg shadow-teal-400/50 opacity-0" id="selectedGlow"></div>
+
+          <!-- Auto-detected room labels (clickable to name) -->
+          <div class="absolute top-[100px] left-[100px] bg-teal-500/20 border border-teal-400/50 rounded px-4 py-2 text-center cursor-pointer hover:bg-teal-500/30" onclick="selectRoom('Living Room')">
+            <div class="text-teal-300 text-xs font-bold">🛋️ Living Room</div>
+            <div class="text-teal-400/60 text-[9px]">5.2m × 4.0m · 20.8m²</div>
           </div>
-          <!-- Toilet -->
-          <div class="absolute top-44 left-8 w-16 h-16 border-2 border-purple-400 bg-purple-500/10 rounded flex items-center justify-center text-purple-300 text-xs font-medium cursor-pointer">
-            Toilet 1
+          <div class="absolute top-[100px] right-[80px] bg-blue-500/20 border border-blue-400/50 rounded px-3 py-2 text-center">
+            <div class="text-blue-300 text-xs font-bold">🛏️ MBR</div>
+            <div class="text-blue-400/60 text-[9px]">4.0m × 3.5m · 14.0m²</div>
           </div>
-          <!-- Door indicator -->
-          <div class="absolute top-10 left-[7.5rem] w-4 h-2 bg-amber-400 rounded-full flex items-center justify-center text-[8px]">🚪</div>
-          <!-- Window indicator -->
-          <div class="absolute top-4 left-20 w-8 h-2 bg-cyan-400 rounded-full"></div>
+          <div class="absolute bottom-[60px] left-[70px] bg-emerald-500/20 border border-emerald-400/50 rounded px-3 py-2 text-center">
+            <div class="text-emerald-300 text-xs font-bold">🍳 Kitchen</div>
+            <div class="text-emerald-400/60 text-[9px]">4.0m × 2.5m · 10.0m²</div>
+          </div>
+          <div class="absolute bottom-[60px] right-[80px] bg-purple-500/20 border border-purple-400/50 rounded px-2 py-1.5 text-center">
+            <div class="text-purple-300 text-xs font-bold">🛌 Bedroom 2</div>
+            <div class="text-purple-400/60 text-[9px]">3.5m × 3.0m</div>
+          </div>
+          <div class="absolute bottom-[100px] right-[50px] bg-amber-500/20 border border-amber-400/50 rounded px-2 py-1.5 text-center">
+            <div class="text-amber-300 text-xs font-bold">🛡️ B. Shelter</div>
+            <div class="text-amber-400/60 text-[9px]">2.0m × 2.0m</div>
+          </div>
+
+          <!-- Door indicators on walls -->
+          <div class="absolute top-[110px] left-[248px] text-[10px]">🚪</div>
+          <div class="absolute top-[220px] left-[155px] text-[10px]">🚪</div>
+          <div class="absolute top-[110px] right-[128px] text-[10px]">🚪</div>
+
+          <!-- Window indicators on external walls -->
+          <div class="absolute top-[130px] left-[45px] text-[10px]">🪟</div>
+          <div class="absolute top-[130px] right-[45px] text-[10px]">🪟</div>
+
+          <!-- Wall endpoint snap dots -->
+          <div class="absolute top-[58px] left-[238px] w-2 h-2 bg-white rounded-full"></div>
+          <div class="absolute top-[168px] left-[238px] w-2 h-2 bg-white rounded-full"></div>
+          <div class="absolute top-[58px] left-[38px] w-2 h-2 bg-white rounded-full"></div>
+          <div class="absolute top-[168px] left-[38px] w-2 h-2 bg-white rounded-full"></div>
         </div>
       </div>
 
       <!-- Toolbar -->
-      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 flex gap-2">
-        <button class="bg-teal-600 text-white text-xs px-3 py-1.5 rounded">✏️ Draw</button>
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 flex gap-2 items-center">
+        <button class="bg-teal-600 text-white text-xs px-3 py-1.5 rounded">✏️ Draw Wall</button>
         <button class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded hover:bg-slate-600">✋ Select</button>
         <button class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded hover:bg-slate-600">🚪 Door</button>
         <button class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded hover:bg-slate-600">🪟 Window</button>
+        <button class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded hover:bg-slate-600">🧱 Load-Bearing</button>
         <button class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded hover:bg-slate-600">🗑️ Delete</button>
         <span class="w-px bg-slate-600 mx-1"></span>
-        <button class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded hover:bg-slate-600">🔍+</button>
-        <button class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded hover:bg-slate-600">🔍−</button>
+        <button class="bg-slate-700 text-slate-300 text-xs px-2 py-1.5 rounded hover:bg-slate-600">🔍+</button>
+        <button class="bg-slate-700 text-slate-300 text-xs px-2 py-1.5 rounded hover:bg-slate-600">🔍−</button>
+        <span class="w-px bg-slate-600 mx-1"></span>
+        <button class="bg-indigo-600/50 text-indigo-300 text-xs px-3 py-1.5 rounded">🏷️ Auto-Detect Rooms</button>
       </div>
     </div>
 
     <!-- Properties Panel (30%) -->
     <div class="w-80 bg-slate-850 border-l border-slate-700 p-4 overflow-y-auto shrink-0">
-      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Selected: Living Room</div>
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Selected: Wall 3 (Living ↔ MBR)</div>
 
       <div class="space-y-3">
         <div>
-          <label class="text-xs text-slate-400 block mb-1">Room Type</label>
+          <label class="text-xs text-slate-400 block mb-1">Wall Type</label>
           <select class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm">
-            <option selected>Living</option>
-            <option>Master Bedroom</option>
-            <option>Bedroom</option>
-            <option>Kitchen</option>
-            <option>Toilet</option>
-            <option>Bomb Shelter</option>
-            <option>Service Yard</option>
-            <option>Hallway</option>
+            <option selected>Internal</option>
+            <option>External</option>
+            <option>Party</option>
           </select>
         </div>
-        <div>
-          <label class="text-xs text-slate-400 block mb-1">Label</label>
-          <input type="text" value="Living Room" class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm">
+        <div class="flex items-center justify-between bg-slate-700/30 p-2 rounded">
+          <span class="text-xs text-slate-400">Load-bearing</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" class="sr-only peer">
+            <div class="w-8 h-4 bg-slate-600 rounded-full peer peer-checked:bg-amber-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+          </label>
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="text-xs text-slate-400 block mb-1">Wall Height (m)</label>
+            <label class="text-xs text-slate-400 block mb-1">Thickness (m)</label>
+            <input type="number" value="0.15" class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm">
+          </div>
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Height (m)</label>
             <input type="number" value="2.8" class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm">
           </div>
-          <div>
-            <label class="text-xs text-slate-400 block mb-1">Floor Type</label>
-            <select class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm">
-              <option selected>Parquet</option>
-              <option>Tiles</option>
-              <option>Laminate</option>
-              <option>Vinyl</option>
-            </select>
-          </div>
         </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="text-xs text-slate-400 block mb-1">Wall Color</label>
-            <div class="flex gap-1">
-              <input type="color" value="#F5F5F0" class="w-8 h-8 rounded cursor-pointer">
-              <input type="text" value="#F5F5F0" class="flex-1 bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm">
+
+        <div class="border-t border-slate-700 pt-3">
+          <div class="text-xs text-slate-400 mb-2">Wall Dimensions</div>
+          <div class="grid grid-cols-2 gap-2 text-center text-xs">
+            <div class="bg-slate-700/50 p-2 rounded">
+              <div class="text-slate-400">Length</div>
+              <div class="font-medium text-teal-300">4.0m</div>
             </div>
-          </div>
-          <div>
-            <label class="text-xs text-slate-400 block mb-1">Floor Color</label>
-            <input type="text" value="Light Oak" class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm">
+            <div class="bg-slate-700/50 p-2 rounded">
+              <div class="text-slate-400">Orientation</div>
+              <div class="font-medium text-teal-300">N-S</div>
+            </div>
           </div>
         </div>
 
         <div class="border-t border-slate-700 pt-3">
-          <div class="text-xs text-slate-400 mb-2">Dimensions</div>
-          <div class="grid grid-cols-3 gap-2 text-center text-xs">
-            <div class="bg-slate-700/50 p-2 rounded">
-              <div class="text-slate-400">Width</div>
-              <div class="font-medium text-teal-300">5.2m</div>
+          <div class="text-xs text-slate-400 mb-2">Adjacent Rooms</div>
+          <div class="flex gap-2">
+            <div class="flex-1 bg-teal-500/10 border border-teal-400/30 p-2 rounded text-center cursor-pointer hover:bg-teal-500/20">
+              <div class="text-teal-300 text-xs">Left</div>
+              <div class="text-teal-400 text-xs font-medium">🛋️ Living Room</div>
             </div>
-            <div class="bg-slate-700/50 p-2 rounded">
-              <div class="text-slate-400">Depth</div>
-              <div class="font-medium text-teal-300">4.8m</div>
-            </div>
-            <div class="bg-slate-700/50 p-2 rounded">
-              <div class="text-slate-400">Area</div>
-              <div class="font-medium text-teal-300">24.96m²</div>
+            <div class="flex-1 bg-blue-500/10 border border-blue-400/30 p-2 rounded text-center cursor-pointer hover:bg-blue-500/20">
+              <div class="text-blue-300 text-xs">Right</div>
+              <div class="text-blue-400 text-xs font-medium">🛏️ MBR</div>
             </div>
           </div>
         </div>
 
         <div class="border-t border-slate-700 pt-3">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-xs text-slate-400">Doors</span>
+            <span class="text-xs text-slate-400">Doors on this wall</span>
             <button class="text-xs text-teal-400 hover:text-teal-300">+ Add</button>
           </div>
-          <div class="bg-slate-700/30 p-2 rounded text-xs flex justify-between">
-            <span>🚪 W: 0.9m · H: 2.1m</span>
-            <span class="text-slate-500">Inward</span>
+          <div class="bg-slate-700/30 p-2 rounded text-xs space-y-1">
+            <div class="flex justify-between">
+              <span>🚪 W: 0.9m · H: 2.1m</span>
+              <span class="text-slate-500">Pos: 45%</span>
+            </div>
+            <div class="w-full bg-slate-700 h-1 rounded-full">
+              <div class="bg-amber-400 h-1 rounded-full w-[45%]"></div>
+            </div>
           </div>
         </div>
 
         <div class="border-t border-slate-700 pt-3">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-xs text-slate-400">Windows</span>
+            <span class="text-xs text-slate-400">Windows on this wall</span>
             <button class="text-xs text-teal-400 hover:text-teal-300">+ Add</button>
           </div>
-          <div class="bg-slate-700/30 p-2 rounded text-xs flex justify-between">
-            <span>🪟 W: 1.2m · H: 1.2m</span>
-            <span class="text-slate-500">Sill: 1.0m</span>
-          </div>
+          <div class="text-xs text-slate-500 italic">— No windows on internal walls —</div>
         </div>
 
         <div class="border-t border-slate-700 pt-3 flex gap-2">
-          <button class="flex-1 bg-red-600/20 text-red-400 text-xs py-1.5 rounded hover:bg-red-600/30">Delete Room</button>
+          <button class="flex-1 bg-red-600/20 text-red-400 text-xs py-1.5 rounded hover:bg-red-600/30">Delete Wall</button>
+          <button class="flex-1 bg-amber-600/20 text-amber-400 text-xs py-1.5 rounded hover:bg-amber-600/30">Toggle Load-Bearing</button>
           <button class="flex-1 bg-slate-700 text-slate-300 text-xs py-1.5 rounded">Preview 3D 🏠</button>
         </div>
       </div>
     </div>
   </div>
+
+  <script>
+    function selectRoom(name) {
+      alert(`Room selected: ${name}\n\nIn production: opens room property panel\nfor labelling detected rooms.`);
+    }
+  </script>
 </body>
 </html>

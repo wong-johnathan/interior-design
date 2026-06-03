@@ -3,186 +3,143 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camera Placement Mode</title>
+<title>Top-Down Camera Angle Picker</title>
 <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-white font-['Inter',system-ui,sans-serif] h-screen flex flex-col overflow-hidden">
-  <!-- Top bar -->
+  <!-- Header -->
   <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 shrink-0">
-    <div class="flex items-center gap-3 text-sm">
-      <span class="text-slate-400">← Render Settings</span>
-      <span class="text-teal-400 font-medium">Camera Mode</span>
-      <span class="text-xs bg-teal-500/20 text-teal-300 px-2 py-0.5 rounded">📷 Placing Camera</span>
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-slate-400">← Render Settings</span>
+      <span class="text-slate-600">|</span>
+      <span class="text-sm font-medium">📷 Add Custom Camera Angle</span>
     </div>
-    <div class="flex gap-2">
-      <button class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded hover:bg-slate-600">Reset</button>
-      <button class="bg-teal-600 text-white text-xs px-4 py-1.5 rounded font-medium hover:bg-teal-500">Save Angle</button>
-    </div>
+    <button class="bg-teal-600 text-white text-xs px-3 py-1.5 rounded">Save Angle</button>
   </div>
 
-  <div class="flex flex-1">
-    <!-- 3D Viewport (main) -->
-    <div class="flex-1 bg-slate-800 relative">
-      <!-- Camera overlay indicator -->
-      <div class="absolute top-4 left-4 bg-slate-900/80 rounded-lg p-3 border border-teal-500/30 z-10">
-        <div class="flex items-center gap-2 text-sm text-teal-300 font-medium">
-          <span>📷</span>
-          <span>Free Camera Mode</span>
-        </div>
-        <div class="text-[10px] text-slate-400 mt-1">
-          Drag to orbit · Scroll to zoom · Position your shot
+  <div class="flex flex-1 overflow-hidden">
+    <!-- 2D Floor Plan View (left) -->
+    <div class="flex-1 bg-slate-700 relative flex items-center justify-center">
+      <div class="relative w-[480px] h-[380px] bg-slate-600 rounded-lg">
+        <!-- Floor plan overlay -->
+        <div class="absolute inset-0">
+          <!-- Room outlines -->
+          <div class="absolute top-[60px] left-[40px] w-[240px] h-[140px] border border-slate-400/30 rounded"></div>
+          <div class="absolute top-[60px] right-[40px] w-[160px] h-[100px] border border-slate-400/30 rounded"></div>
+          <div class="absolute bottom-[80px] left-[40px] w-[180px] h-[120px] border border-slate-400/30 rounded"></div>
+          <div class="absolute bottom-[80px] right-[40px] w-[120px] h-[100px] border border-slate-400/30 rounded"></div>
+
+          <!-- Room labels -->
+          <div class="absolute top-[120px] left-[140px] text-slate-500 text-xs">Living Room</div>
+          <div class="absolute top-[90px] right-[80px] text-slate-500 text-xs">MBR</div>
+          <div class="absolute bottom-[130px] left-[100px] text-slate-500 text-xs">Kitchen</div>
+          <div class="absolute bottom-[120px] right-[70px] text-slate-500 text-xs">Bed 2</div>
+
+          <!-- Camera position (click point) — blue dot -->
+          <div class="absolute top-[140px] left-[160px] w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg shadow-blue-500/50 z-10" id="cameraDot">
+            <div class="absolute -top-6 left-1/2 -translate-x-1/2 text-[8px] text-blue-300 whitespace-nowrap">📷 Camera position</div>
+          </div>
+
+          <!-- Direction arrow -->
+          <div class="absolute top-[140px] left-[170px] text-blue-400 text-2xl z-10" id="directionArrow">➡️</div>
+
+          <!-- Angle cone indicator -->
+          <div class="absolute top-[135px] left-[175px] w-16 h-12 border-l-2 border-b-2 border-blue-400/30 rounded-bl-lg z-0" style="transform: rotate(-5deg);"></div>
+
+          <!-- Distance label -->
+          <div class="absolute top-[130px] left-[194px] text-[8px] text-blue-300/60">3m</div>
         </div>
       </div>
 
-      <!-- Camera viewport frame indicator -->
-      <div class="absolute inset-4 border-2 border-dashed border-teal-500/40 rounded-xl pointer-events-none z-0"></div>
-
-      <!-- Center crosshair -->
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
-        <div class="relative w-8 h-8">
-          <div class="absolute top-1/2 left-0 right-0 h-px bg-teal-400/60"></div>
-          <div class="absolute left-1/2 top-0 bottom-0 w-px bg-teal-400/60"></div>
-          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-teal-400 rounded-full"></div>
-        </div>
-      </div>
-
-      <!-- Room label (dimmed) -->
-      <div class="absolute top-4 right-4 bg-slate-900/60 text-xs px-2 py-1 rounded text-slate-400 z-10">🛋️ Living Room</div>
-
-      <!-- Camera info HUD -->
-      <div class="absolute bottom-20 left-4 bg-slate-900/80 rounded-lg p-3 border border-slate-700 z-10 text-[10px] space-y-1">
-        <div class="flex justify-between gap-6">
-          <span class="text-slate-400">Position:</span>
-          <span class="text-teal-300 font-mono">(4.2, 1.6, 3.8)</span>
-        </div>
-        <div class="flex justify-between gap-6">
-          <span class="text-slate-400">Target:</span>
-          <span class="text-teal-300 font-mono">(2.5, 1.2, 2.0)</span>
-        </div>
-        <div class="flex justify-between gap-6">
-          <span class="text-slate-400">FOV:</span>
-          <span class="text-slate-300 font-mono">50°</span>
-        </div>
-        <div class="flex justify-between gap-6">
-          <span class="text-slate-400">Room:</span>
-          <span class="text-slate-300">Living Room</span>
-        </div>
-      </div>
-
-      <!-- Viewport 3D scene -->
-      <div class="absolute inset-0 flex items-center justify-center">
-        <div class="text-slate-500 text-center">
-          <div class="text-6xl mb-4">🏠</div>
-          <div class="text-sm">3D Viewport — Camera Mode</div>
-          <div class="text-xs text-slate-600 mt-1">Position your camera freely. Saved angles appear in render selection.</div>
-        </div>
-      </div>
-
-      <!-- Bottom hint bar -->
-      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-10">
-        <button class="bg-slate-800 border border-slate-600 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-slate-700">
-          <span class="text-slate-400">🎯</span> Snap to Room Center
-        </button>
-        <button class="bg-slate-800 border border-slate-600 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-slate-700">
-          <span class="text-slate-400">👁️</span> Eye Level (1.6m)
-        </button>
-        <button class="bg-slate-800 border border-slate-600 text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-slate-700">
-          <span class="text-slate-400">🔲</span> Wide Angle
-        </button>
+      <!-- Instruction overlay -->
+      <div class="absolute top-4 left-4 bg-slate-800/80 rounded px-3 py-2 text-xs text-slate-300 max-w-xs">
+        <div class="font-semibold text-slate-200 mb-1">How it works</div>
+        <ol class="list-decimal list-inside space-y-0.5 text-slate-400">
+          <li>Click anywhere <span class="text-blue-300">inside a room</span> on the floor plan</li>
+          <li>Drag to set the <span class="text-blue-300">viewing direction</span></li>
+          <li>System computes: camera at <span class="text-teal-300">1.6m eye level</span>, FOV 50°</li>
+          <li>Name and save your angle</li>
+        </ol>
       </div>
     </div>
 
-    <!-- Right Panel: Saved Angles + Capture Controls -->
-    <div class="w-72 bg-slate-850 border-l border-slate-700 flex flex-col shrink-0">
-      <!-- Capture form -->
-      <div class="p-4 border-b border-slate-700">
-        <h3 class="text-sm font-medium mb-3">📷 Capture This View</h3>
-        <input type="text" placeholder="Name this angle..." value="Kitchen Breakfast Bar" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-400 mb-3">
-        <div class="grid grid-cols-2 gap-2 mb-3">
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-0.5">Room</label>
-            <select class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs">
-              <option>Living Room</option>
-              <option>Master Bedroom</option>
-              <option selected>Kitchen</option>
-              <option>Bedroom 2</option>
-            </select>
-          </div>
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-0.5">Resolution</label>
-            <select class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs">
-              <option>1024×1024</option>
-              <option>2048×2048</option>
-            </select>
+    <!-- Right Panel -->
+    <div class="w-80 bg-slate-800 border-l border-slate-700 p-4 overflow-y-auto shrink-0">
+      <!-- 3D Preview Thumbnail -->
+      <div class="mb-4">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Camera Preview</div>
+        <div class="aspect-[4/3] bg-slate-700 rounded-lg flex items-center justify-center border border-slate-600">
+          <div class="text-center">
+            <div class="text-slate-500 text-2xl mb-1">🖼️</div>
+            <div class="text-slate-500 text-xs">3D preview auto-generates</div>
+            <div class="text-slate-600 text-[10px]">from floor plan position + direction</div>
           </div>
         </div>
-        <button class="w-full bg-teal-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-teal-500 flex items-center justify-center gap-2">
-          📸 Capture & Save
-        </button>
       </div>
 
-      <!-- Saved angles list -->
-      <div class="flex-1 overflow-y-auto p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Saved Angles</h3>
-          <span class="text-[10px] text-slate-500">2 custom · 5 auto</span>
+      <!-- Camera Info HUD -->
+      <div class="bg-slate-700/50 rounded p-3 mb-4">
+        <div class="text-xs font-semibold text-slate-400 mb-2">Camera Info</div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div><span class="text-slate-500">Position:</span> <span class="text-teal-300">(3.2, 1.6, 2.5)</span></div>
+          <div><span class="text-slate-500">Target:</span> <span class="text-teal-300">(6.2, 1.2, 2.5)</span></div>
+          <div><span class="text-slate-500">FOV:</span> <span class="text-teal-300">50°</span></div>
+          <div><span class="text-slate-500">Room:</span> <span class="text-blue-300">Living Room</span></div>
+        </div>
+      </div>
+
+      <!-- Save Form -->
+      <div class="space-y-3 mb-4">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Angle Name</label>
+          <input type="text" value="Kitchen Breakfast Bar" class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Room</label>
+          <select class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm">
+            <option>Living Room</option>
+            <option>Master Bedroom</option>
+            <option selected>Kitchen</option>
+            <option>Bedroom 2</option>
+          </select>
+        </div>
+        <button class="w-full bg-teal-600 text-white text-sm py-2 rounded hover:bg-teal-500">📸 Capture & Save</button>
+      </div>
+
+      <!-- Saved Angles -->
+      <div class="border-t border-slate-700 pt-3">
+        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Saved Angles</div>
+
+        <div class="text-[10px] text-slate-500 uppercase mb-1">Auto-generated</div>
+        <div class="space-y-1 mb-3">
+          <div class="bg-slate-700/30 px-2 py-1.5 rounded text-xs flex justify-between items-center">
+            <span>Living — Corner View</span>
+            <span class="text-slate-600">auto</span>
+          </div>
+          <div class="bg-slate-700/30 px-2 py-1.5 rounded text-xs flex justify-between items-center">
+            <span>Living — Entrance View</span>
+            <span class="text-slate-600">auto</span>
+          </div>
+          <div class="bg-slate-700/30 px-2 py-1.5 rounded text-xs flex justify-between items-center">
+            <span>MBR — Door View</span>
+            <span class="text-slate-600">auto</span>
+          </div>
         </div>
 
-        <!-- Auto angles section -->
-        <div class="text-[10px] text-slate-500 font-medium mb-2 uppercase">Auto-generated</div>
-        <div class="space-y-1.5 mb-4">
-          <div class="bg-slate-700/20 rounded-lg p-2 flex items-center justify-between">
+        <div class="text-[10px] text-slate-500 uppercase mb-1">Custom</div>
+        <div class="space-y-1">
+          <div class="bg-teal-900/30 border border-teal-700/30 px-2 py-1.5 rounded text-xs flex justify-between items-center">
             <div>
-              <div class="text-xs text-slate-300">Corner View</div>
-              <div class="text-[10px] text-slate-500">Living Room</div>
-            </div>
-            <span class="text-[10px] text-slate-500">auto</span>
-          </div>
-          <div class="bg-slate-700/20 rounded-lg p-2 flex items-center justify-between">
-            <div>
-              <div class="text-xs text-slate-300">Entrance View</div>
-              <div class="text-[10px] text-slate-500">Living Room</div>
-            </div>
-            <span class="text-[10px] text-slate-500">auto</span>
-          </div>
-          <div class="bg-slate-700/20 rounded-lg p-2 flex items-center justify-between">
-            <div>
-              <div class="text-xs text-slate-300">Door View</div>
-              <div class="text-[10px] text-slate-500">MBR · Kitchen · Bed 2</div>
-            </div>
-            <span class="text-[10px] text-slate-500">auto</span>
-          </div>
-        </div>
-
-        <!-- Custom angles section -->
-        <div class="text-[10px] text-slate-500 font-medium mb-2 uppercase">Custom</div>
-        <div class="space-y-1.5">
-          <div class="bg-teal-600/10 border border-teal-600/30 rounded-lg p-2.5 flex items-center justify-between">
-            <div>
-              <div class="text-xs font-medium text-teal-300">🍳 Kitchen Breakfast Bar</div>
-              <div class="text-[10px] text-slate-400">Kitchen · Eye-level close-up</div>
+              <span>🍳 Kitchen Breakfast Bar</span>
+              <div class="text-[10px] text-slate-500">from (3.2, 1.6, 2.5) → looking NE</div>
             </div>
             <div class="flex gap-1">
-              <button class="text-[10px] text-slate-500 hover:text-white">✏️</button>
-              <button class="text-[10px] text-slate-500 hover:text-red-400">🗑️</button>
+              <button class="text-slate-500 hover:text-white text-[10px]">✏️</button>
+              <button class="text-slate-500 hover:text-red-400 text-[10px]">🗑️</button>
             </div>
           </div>
-          <div class="bg-slate-700/20 rounded-lg p-2.5 flex items-center justify-between opacity-60">
-            <div>
-              <div class="text-xs text-slate-300">My Reading Corner</div>
-              <div class="text-[10px] text-slate-500">Living Room · Window-side</div>
-            </div>
-            <div class="flex gap-1">
-              <button class="text-[10px] text-slate-500 hover:text-white">✏️</button>
-              <button class="text-[10px] text-slate-500 hover:text-red-400">🗑️</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Hint -->
-        <div class="mt-6 pt-4 border-t border-slate-700">
-          <div class="text-[10px] text-slate-500 leading-relaxed">
-            💡 Custom angles appear in the Final Render angle selection. You can choose which angles to include in each room's render batch.
+          <div class="bg-slate-700/30 px-2 py-1.5 rounded text-xs flex justify-between items-center">
+            <span class="text-slate-500 italic">Add your first custom angle...</span>
           </div>
         </div>
       </div>
