@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { StudioBreadcrumb } from '@/components/layout/StudioBreadcrumb';
 import { ChatPanel } from '@/components/consultant/ChatPanel';
 import { DesignSummary } from '@/components/consultant/DesignSummary';
 import { RoomTabBar } from '@/components/consultant/RoomTabBar';
 import { Button } from '@/components/ui/button';
+import { generateDefaultFloorPlan } from '@/lib/defaultRoomData';
+import { captureViewport } from '@/lib/viewportCapture';
 import {
   Palette,
   Download,
@@ -16,7 +19,14 @@ import {
   MessageSquare,
   X,
   Sparkles,
+  Clock,
 } from 'lucide-react';
+
+// Dynamically import ThreeDViewport (SSR-safe for Three.js)
+const ThreeDViewport = dynamic(
+  () => import('@/components/studio/ThreeDViewport'),
+  { ssr: false },
+);
 
 export default function StudioPage() {
   const params = useParams();
@@ -25,6 +35,10 @@ export default function StudioPage() {
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [activeRoom, setActiveRoom] = useState('living');
+  const [isCapturing, setIsCapturing] = useState(false);
+  const viewportContainerRef = useRef<HTMLDivElement>(null);
+
+  const floorPlan = useMemo(() => generateDefaultFloorPlan(), []);
 
   const rooms = [
     { id: 'living', label: 'Living Room' },
@@ -34,10 +48,10 @@ export default function StudioPage() {
   ];
 
   const designBriefData = {
-    'living': { style: 'Japandi', details: 'Light oak · White walls' },
-    'kitchen': { style: 'Vintage', details: 'Green tiles · Dark cabinets' },
-    'mbr': { style: 'Japandi', details: 'Walnut floor · Cream walls' },
-    'bed2': { style: 'Scandi', details: 'White · Pastel accents' },
+    'living': { room: 'living', style: 'Japandi', colors: 'Light oak, warm white', materials: 'Oak, linen, bamboo', furniture: 'Low-profile, minimalist', lighting: 'Warm ambient, task' },
+    'kitchen': { room: 'kitchen', style: 'Vintage', colors: 'Green, cream', materials: 'Ceramic tiles, dark wood', furniture: 'Open shelving, butcher block', lighting: 'Pendant, under-cabinet' },
+    'mbr': { room: 'mbr', style: 'Japandi', colors: 'Walnut, cream', materials: 'Walnut, linen, wool', furniture: 'Platform bed, sliding closet', lighting: 'Dimmable, soft' },
+    'bed2': { room: 'bed2', style: 'Scandi', colors: 'White, pastel accents', materials: 'Birch, cotton', furniture: 'Compact desk, bed', lighting: 'Natural, task lamp' },
   };
 
   return (
@@ -69,18 +83,12 @@ export default function StudioPage() {
         </div>
 
         {/* Center: 3D Viewport */}
-        <div className="flex-1 bg-slate-800 flex items-center justify-center relative">
-          {/* 3D placeholder */}
-          <div className="text-slate-500 text-center">
-            <div className="text-6xl mb-4">🏠</div>
-            <div className="text-sm font-medium text-slate-400">3D Viewport</div>
-            <div className="text-xs text-slate-500 mt-1">
-              <span className="inline-flex items-center gap-2">
-                <Grid3X3 className="w-3 h-3" />
-                Orbit controls · Room labels · Materials
-              </span>
-            </div>
-          </div>
+        <div ref={viewportContainerRef} className="flex-1 bg-slate-800 relative">
+          <ThreeDViewport
+            wallSegments={floorPlan.walls}
+            roomLabels={floorPlan.roomLabels}
+            activeRoom={activeRoom}
+          />
 
           {/* Floating Action Buttons */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 flex-wrap justify-center">
@@ -105,10 +113,34 @@ export default function StudioPage() {
               variant="default"
               size="sm"
               className="bg-teal-600 hover:bg-teal-500 text-xs flex items-center gap-1"
-              onClick={() => router.push(`/render/${projectId}`)}
+              onClick={async () => {
+                setIsCapturing(true);
+                try {
+                  const canvas = viewportContainerRef.current?.querySelector('canvas');
+                  if (canvas) {
+                    const dataUrl = await captureViewport(canvas);
+                    sessionStorage.setItem(`viewport-capture-${projectId}`, dataUrl);
+                  }
+                } catch (e) {
+                  console.warn('Viewport capture failed:', e);
+                } finally {
+                  setIsCapturing(false);
+                }
+                router.push(`/render/${projectId}`);
+              }}
+              disabled={isCapturing}
             >
-              <ImageIcon className="w-3.5 h-3.5" />
-              Generate Sample
+              {isCapturing ? (
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 animate-spin" />
+                  Capturing...
+                </span>
+              ) : (
+                <>
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  Generate Sample
+                </>
+              )}
             </Button>
             <Button
               variant="secondary"
@@ -124,7 +156,7 @@ export default function StudioPage() {
         {/* Right Panel: Design Summary (desktop) */}
         <div className="w-64 bg-slate-850 border-l border-slate-700 p-3 shrink-0 overflow-y-auto hidden md:block">
           <DesignSummary
-            brief={designBriefData}
+            briefs={designBriefData}
             activeRoom={activeRoom}
             onRoomClick={setActiveRoom}
           />

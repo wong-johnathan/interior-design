@@ -10,6 +10,8 @@ const ROOMS = [
   { id: 'mbr', label: 'Master Bedroom', short: 'MBR' },
   { id: 'kitchen', label: 'Kitchen', short: 'Kitchen' },
   { id: 'bed2', label: 'Bedroom 2', short: 'Bed 2' },
+  { id: 'bath1', label: 'Bathroom 1', short: 'Bath 1' },
+  { id: 'bath2', label: 'Bathroom 2', short: 'Bath 2' },
 ];
 
 export function RoomTabBar({ activeRoom, onRoomChange }: RoomTabBarProps) {

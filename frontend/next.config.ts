@@ -28,6 +28,10 @@ const nextConfig: NextConfig = {
         destination: '/api/auth/:path*',
       },
       {
+        source: '/api/ai/chat',
+        destination: '/api/ai/chat',
+      },
+      {
         source: '/api/:path*',
         destination: 'http://backend:4000/api/:path*',
       },

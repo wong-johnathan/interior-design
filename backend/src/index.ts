@@ -14,6 +14,7 @@ import exportRoutes from './routes/export';
 import furnitureRoutes from './routes/furniture';
 import wallRoutes from './routes/walls';
 import presetRoutes from './routes/presets';
+import floorPlanRoutes from './routes/floorPlan';
 
 // ─── App Initialization ──────────────────────────────────────────
 
@@ -84,6 +85,7 @@ app.use('/api/import', exportRoutes); // Reuse export router for /api/import
 app.use('/api/furniture', furnitureRoutes);
 app.use('/api/walls', wallRoutes);
 app.use('/api/presets', presetRoutes);
+app.use('/api/floor-plans', floorPlanRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────
 
