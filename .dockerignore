@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────────────────────────
+# Docker ignore — project root
+# ─────────────────────────────────────────────────────────────────────
+
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Node
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose*.yml
+.dockerignore
+
+# Build artifacts
+dist
+build
+.next
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+
+# SSL certs (generated)
+nginx/ssl/*.pem
+nginx/ssl/*.key
+
+# Documentation & sketches
+*.md
+sketches/
+
+# Scripts (not needed in images)
+scripts/

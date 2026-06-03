@@ -1,0 +1,10 @@
+'use client';
+
+export function Doors() {
+  return (
+    <div className="inline-flex items-center gap-1 text-[10px] text-slate-500">
+      <span>🚪</span>
+      <span>Doors</span>
+    </div>
+  );
+}

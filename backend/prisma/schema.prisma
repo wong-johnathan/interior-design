@@ -1,0 +1,320 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [pg_trgm, uuid_ossp]
+}
+
+// ─── Auth ───────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  avatarUrl      String?
+  emailVerified  DateTime?
+  role           String    @default("user") // "user" | "admin"
+  accounts       Account[]
+  sessions       Session[]
+  projects       Project[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── BTO Projects & Templates ───────────────────────────────────────
+
+model BTOProject {
+  id          String      @id @default(cuid())
+  name        String      // "Verandah Kallang 2024"
+  slug        String      @unique // "verandah-kallang-2024"
+  description String?
+  location    String      // "Kallang", "Queenstown"
+  launchYear  Int         // 2024, 2025
+  developer   String      @default("HDB")
+  imageUrl    String?     // Hero image for browse page
+  models      FlatModel[]
+  published   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([published, launchYear])
+  @@index([slug])
+  @@index([location])
+}
+
+model FlatModel {
+  id            String       @id @default(cuid())
+  btoProject    BTOProject   @relation(fields: [btoProjectId], references: [id], onDelete: Cascade)
+  btoProjectId  String
+  name          String       // "4-Room Model A", "5-Room Premium"
+  flatType      String       // "3-room" | "4-room" | "5-room" | "executive" | "2-room-flexi"
+  floorPlanUrl  String?      // R2 URL for floor plan image
+  thumbnailUrl  String?
+  totalArea     Float?       // square metres
+  roomCount     Int?         // Number of rooms (excluding bathrooms/hallway)
+  walls         WallSegment[]
+  roomDefs      RoomDef[]
+  published     Boolean      @default(false)
+  sortOrder     Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([btoProjectId, published])
+  @@index([flatType])
+}
+
+// ─── Wall Segments (Editable Geometry) ─────────────────────────
+
+model WallSegment {
+  id            String         @id @default(cuid())
+  flatModel     FlatModel      @relation(fields: [flatModelId], references: [id], onDelete: Cascade)
+  flatModelId   String
+
+  // 2D line segment (metres from origin)
+  startX        Float
+  startY        Float
+  endX          Float
+  endY          Float
+
+  // Physical properties
+  thickness     Float          @default(0.15)  // HDB internal wall: 150mm
+  height        Float          @default(2.8)   // HDB ceiling height
+  wallType      String         @default("internal") // "internal" | "external" | "party"
+  isLoadBearing Boolean        @default(false)
+
+  // Room adjacency
+  positiveRoom  RoomDef?       @relation(name: "positiveRoom", fields: [positiveRoomId], references: [id])
+  positiveRoomId String?
+  negativeRoom  RoomDef?       @relation(name: "negativeRoom", fields: [negativeRoomId], references: [id])
+  negativeRoomId String?
+
+  // Openings
+  doorOpenings  DoorOpening[]
+  windowOpenings WindowOpening[]
+
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([flatModelId])
+}
+
+model DoorOpening {
+  id            String       @id @default(cuid())
+  wallSegment   WallSegment  @relation(fields: [wallSegmentId], references: [id], onDelete: Cascade)
+  wallSegmentId String
+
+  position      Float        // 0.0-1.0 along the wall segment
+  width         Float        @default(0.9)
+  height        Float        @default(2.1)
+  swing         String       @default("in") // "in" | "out"
+}
+
+model WindowOpening {
+  id            String       @id @default(cuid())
+  wallSegment   WallSegment  @relation(fields: [wallSegmentId], references: [id], onDelete: Cascade)
+  wallSegmentId String
+
+  position      Float        // 0.0-1.0 along the wall segment
+  width         Float        @default(1.2)
+  height        Float        @default(1.2)
+  sillHeight    Float        @default(1.0)
+  windowType    String       @default("casement")
+}
+
+// ─── Rooms (Derived from Wall Enclosures) ─────────────────────
+
+model RoomDef {
+  id                String       @id @default(cuid())
+  flatModel         FlatModel    @relation(fields: [flatModelId], references: [id], onDelete: Cascade)
+  flatModelId       String
+
+  label             String       // "Living Room", "Master Bedroom"
+  roomType          String       // "living" | "bedroom_master" | "bedroom" | "kitchen" | "toilet" | "bomb_shelter" | "service_yard" | "hallway" | "balcony"
+  originalRoomType  String?      // What admin originally labelled (for reference after user edits)
+
+  // Material defaults
+  defaultWallColor  String       @default("#F5F5F0")
+  defaultFloorType  String       @default("parquet")
+  defaultFloorColor String       @default("#C4A882")
+
+  // Reverse relations from WallSegment adjacency
+  positiveWalls     WallSegment[] @relation(name: "positiveRoom")
+  negativeWalls     WallSegment[] @relation(name: "negativeRoom")
+
+  sortOrder         Int          @default(0)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([flatModelId])
+}
+
+// ─── User Projects ──────────────────────────────────────────────────
+
+model Project {
+  id              String        @id @default(cuid())
+  user            User?         @relation(fields: [userId], references: [id])
+  userId          String?
+  name            String        @default("My Project")
+  flatModelId     String?
+
+  // Wall edit state (patch list — undoable, resettable)
+  wallEdits       Json?         // [{action: "DELETE_WALL", wallId}, ...]
+
+  // Design state
+  designBrief     Json?         // Full DesignBrief JSON — per-room styles
+  chatHistory     Json?         // [{role, content, timestamp}, ...]
+  furnitureState  Json?         // [{furnitureItemId, position, rotation, scale, accepted}, ...]
+  furnitureApplied Boolean      @default(false)
+
+  // Cached 3D snapshot for quick reload
+  modelSnapshot   Json?         // Material assignments, camera position, room visibility
+
+  renders         Render[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model Render {
+  id          String   @id @default(cuid())
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  roomType    String   // "living" | "mbr" | "kitchen" | etc.
+  roomLabel   String   // "Living Room"
+  angleLabel  String   // "Corner View" | "Entrance View" | custom name
+  angleType   String   @default("auto") // "auto" | "custom"
+  imageUrl    String   // R2 URL
+  prompt      String   @db.Text // Full prompt used
+  resolution  String   @default("1024x1024")
+  tier        String   @default("final") // "sample" | "final"
+  status      String   @default("completed") // "pending" | "processing" | "completed" | "failed"
+  errorMsg    String?  // If failed
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([createdAt])
+}
+
+model CustomAngle {
+  id          String   @id @default(cuid())
+  projectId   String
+  roomType    String   // "living" | "mbr" | etc.
+  label       String   // "My breakfast bar view"
+  position    Json     // { x, y, z } camera position
+  target      Json     // { x, y, z } look-at point
+  isCustom    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([projectId, roomType])
+}
+
+// ─── Content Library ────────────────────────────────────────────────
+
+model FurnitureTemplate {
+  id           String   @id @default(cuid())
+  name         String   // "Scandi Living Room Set"
+  category     String   // "living" | "bedroom" | "dining" | "kitchen"
+  styleTag     String?  // "scandinavian" | "japandi" | "industrial" | null (universal)
+  roomType     String   // "living" | "bedroom_master" | "bedroom" | "dining"
+  furniture    Json     // [{type, label, defaultPosition, defaultRotation, defaultScale, modelUrl, dimensions, category, wallAnchor, floorOnly, minClearance}, ...]
+  thumbnailUrl String?
+  published    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category, styleTag])
+  @@index([roomType, styleTag])
+}
+
+model FurnitureCatalogItem {
+  id           String   @id @default(cuid())
+  type         String   // "sofa" | "bed" | "table" | "chair" | "lamp" | "rug" | "cabinet" | "decor"
+  label        String   // "3-Seater Sofa"
+  category     String   // "seating" | "tables" | "lighting" | "decor" | "storage"
+  styleTag     String?  // "scandinavian" | "japandi" | "industrial" | "modern" | null (universal)
+  modelUrl     String   // GLB file in R2
+  thumbnailUrl String?
+  dimensions   Json     // {w, h, d} in metres
+  wallAnchor   String?  // "against" | "facing" | "center" | null
+  floorOnly    Boolean  @default(true)
+  minClearance Float    @default(5) // cm
+  published    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([category, styleTag])
+  @@index([type])
+}
+
+model StylePreset {
+  id            String   @id @default(cuid())
+  name          String   @unique // "Scandinavian", "Japandi", "Industrial"
+  description   String
+  palette       Json     // { floorType, floorColor, wallColor, accentColor, trimColor, lighting }
+  promptHint    String   // "Scandinavian interior with light oak flooring and white walls..."
+  furnitureTags String[] // Template styleTags this preset pairs with
+  createdAt     DateTime @default(now())
+}
+
+// ─── Waitlist ───────────────────────────────────────────────────────
+
+model WaitlistEntry {
+  id          String   @id @default(cuid())
+  email       String   // User's email (from auth or manual input)
+  userId      String?  // If logged in
+  projectName String   // What they searched for
+  location    String?  // Optional, from search context
+  notified    Boolean  @default(false) // True once admin adds it + notification sent
+  createdAt   DateTime @default(now())
+
+  @@index([email])
+  @@index([notified, createdAt])
+}
