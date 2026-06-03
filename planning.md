@@ -38,7 +38,7 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 | 0.1 | Create Next.js 16 app with App Router, TypeScript, Tailwind | `package.json`, `next.config.ts` | `npm run dev` starts |
 | 0.2 | Install deps: R3F, drei, zustand, react-konva, shadcn/ui, prisma, next-auth | `package.json` | All imports resolve |
 | 0.3 | Init shadcn/ui + add components | `components/ui/` | Components render on test page |
-| 0.4 | Set up Prisma schema + Neon DB | `prisma/schema.prisma`, `.env` | `prisma db push` succeeds |
+| 0.4 | Set up Prisma schema + Supabase DB | `prisma/schema.prisma`, `.env` | `prisma db push` succeeds |
 | 0.5 | Set up Cloudflare R2 bucket + CORS | `.env` (R2 keys) | Test upload via signed URL |
 | 0.6 | Create all route stubs | All `/app/` route files | Routes render "Coming Soon" |
 | 0.7 | GitHub → Vercel deployment pipeline | Vercel dashboard | Preview deployment green |
@@ -161,22 +161,26 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 
 ---
 
-### Phase 6 — Photorealistic Rendering (Week 14-15)
+### Phase 6 — Photorealistic Rendering with 3-Tier System (Week 14-15)
 
 | # | Task | Key Files | Verification |
 |---|------|-----------|-------------|
 | 6.1 | Offscreen room screenshot capture | `lib/ai/renderRoom.ts` | PNG of room from best angle |
 | 6.2 | Construct per-room render prompt from brief | `lib/ai/renderPrompt.ts` | Prompt describes room accurately |
 | 6.3 | Gemini Imagen API integration | `lib/ai/gemini.ts` | API returns image |
-| 6.4 | Render API route (proxy, rate-limited) | `app/api/render/route.ts` | POST → image URL returned |
-| 6.5 | Render button + loading state | `components/renders/RenderButton.tsx` | Spinner during generation |
-| 6.6 | Render gallery grid | `components/renders/RenderGallery.tsx` | Thumbnails of all rooms |
-| 6.7 | Render lightbox (full-size view) | `components/renders/RenderLightbox.tsx` | Click → full size |
-| 6.8 | Room selector (which room to render) | `components/renders/RoomRenderSelector.tsx` | Pick specific room |
-| 6.9 | Render history (save to DB + R2) | `prisma: Render model` | Previous renders loadable |
-| 6.10 | Before/after slider | `components/renders/BeforeAfterSlider.tsx` | Slide between empty and styled |
+| 6.4 | Camera presets per room type (auto angles) | `lib/render/cameraPresets.ts` | 2-3 auto angles per room type |
+| 6.5 | Sample render API route (`/api/render/sample`) | `app/api/render/sample/route.ts` | 1 room rendered, tier=sample |
+| 6.6 | Final render API route (`/api/render/final`) | `app/api/render/final/route.ts` | Batch render all rooms at selected angles |
+| 6.7 | Sample render UI (room picker + review + tweak) | `components/renders/SampleRender.tsx` | Pick room → see result → tweak prompt |
+| 6.8 | Custom camera angle capture (Camera Mode) | `components/viewport/CameraCapture.tsx` | Free cam → capture → saved |
+| 6.9 | Angle selection for final render | `components/renders/AngleSelector.tsx` | Checkbox grid per room |
+| 6.10 | Render progress bar + sequential queue | `components/renders/RenderProgress.tsx` | "Rendering Room 3 of 6" |
+| 6.11 | Render gallery with room tabs + angle toggle | `components/renders/RenderGallery.tsx` | Tab per room, toggle angles |
+| 6.12 | Stale render detection + "Regenerate" badge | `lib/renders/staleDetection.ts` | Renders marked stale when brief/furniture changes |
+| 6.13 | Before/after slider | `components/renders/BeforeAfterSlider.tsx` | Slide between empty and styled |
+| 6.14 | Breadcrumb navigation + state preservation | `components/layout/StudioBreadcrumb.tsx` | Click breadcrumb → state preserved |
 
-**Checkpoint:** User can generate photorealistic renders of any room with chosen style.
+**Checkpoint:** 3-tier render flow works: Preview (viewport) → Sample (1 room, iterate) → Final (all rooms, selected angles, batch progress).
 
 ---
 
@@ -242,7 +246,7 @@ Week 16-17:  Polish → Beta launch
 
 - [ ] GitHub repo: `wong-johnathan/interior-design` ✅
 - [ ] Vercel account connected to GitHub
-- [ ] Neon Postgres database (free tier)
+- [ ] Supabase Postgres database (free tier → Pro at scale)
 - [ ] Cloudflare R2 bucket + access keys
 - [ ] Google Cloud project with Gemini API enabled
 - [ ] Gemini API key (with Imagen access)

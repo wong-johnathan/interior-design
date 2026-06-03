@@ -73,7 +73,7 @@
 | Service | Plan | Purpose |
 |---------|------|---------|
 | **Vercel** | Pro ($20/mo) | Hosting, serverless functions, edge network, preview deploys |
-| **Neon** | Free tier → Scale ($19/mo) | PostgreSQL database with branching for preview envs |
+| **Supabase** | Free tier → Pro ($25/mo) | PostgreSQL database with built-in PgBouncer pooling, auto-backups, Singapore region |
 | **Cloudflare R2** | Free (10GB storage, 1M ops/mo) | File storage — floor plans, 3D models, renders, textures |
 | **Google AI** | Pay-as-you-go | Gemini 2.5 Pro (chat) + Imagen (renders) |
 | **Google Cloud** | Free tier | OAuth client ID for NextAuth |
@@ -84,7 +84,7 @@
 |-------------|---------|
 | **Python FastAPI backend** | Unnecessary — all 3D ops are client-side. Adds deployment complexity (separate server, domain, scaling). |
 | **Redis / BullMQ** | Not needed for MVP — Gemini renders are fast enough (3-10s) for synchronous proxy. Add in v2 for batch rendering. |
-| **Supabase** | Overkill — we don't need real-time or auth from Supabase. NextAuth + Neon is simpler. |
+| **Supabase** | User's preference | We don't need real-time or auth from Supabase — it's pure Postgres. NextAuth handles auth. Supabase chosen for managed Postgres with built-in pooling, daily backups, and generous free tier. |
 | **AWS S3** | More expensive egress. R2 has zero egress fees — important for users downloading renders/3D models. |
 | **Blender (bpy)** | Heavy server-side dependency for operations we do client-side in Three.js. |
 | **WebSocket / Socket.io** | Not needed — SSE streaming for AI chat is simpler, Vercel-compatible. |
@@ -103,7 +103,8 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
-  url        = env("DATABASE_URL")
+  url        = env("DATABASE_URL")       // Pooled:   postgresql://user:***@aws-0.ap-southeast-1.pooler.supabase.com:6543/postgres
+  directUrl  = env("DIRECT_URL")         // Direct:   postgresql://user:***@aws-0.ap-southeast-1.pooler.supabase.com:5432/postgres
   extensions = [pg_trgm, uuid_ossp]
 }
 
@@ -255,15 +256,31 @@ model Render {
   projectId   String
   roomType    String   // "living" | "mbr" | "kitchen" | etc.
   roomLabel   String   // "Living Room"
+  angleLabel  String   // "Corner View" | "Entrance View" | custom name
+  angleType   String   @default("auto") // "auto" | "custom"
   imageUrl    String   // R2 URL
   prompt      String   @db.Text // Full prompt used
   resolution  String   @default("1024x1024")
+  tier        String   @default("final") // "sample" | "final" — whether this was a sample or final render
   status      String   @default("completed") // "pending" | "processing" | "completed" | "failed"
   errorMsg    String?  // If failed
   createdAt   DateTime @default(now())
 
   @@index([projectId])
   @@index([createdAt])
+}
+
+model CustomAngle {
+  id          String   @id @default(cuid())
+  projectId   String
+  roomType    String   // "living" | "mbr" | etc.
+  label       String   // "My breakfast bar view"
+  position    Json     // { x, y, z } camera position
+  target      Json     // { x, y, z } look-at point
+  isCustom    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([projectId, roomType])
 }
 
 // ─── Content Library ────────────────────────────────────────────────
@@ -561,16 +578,17 @@ async function renderRoom(
 }
 ```
 
-### 3.5 Cost Projections
+### 3.5 Cost Projections (Updated for 3-Tier)
 
 | Service | Usage Estimate | Monthly Cost |
 |---------|---------------|--------------|
 | **Gemini 2.5 Pro (chat)** | 50 chats/user × 5 turns × 500 users = 125K turns | ~$15-30 |
-| **Imagen (renders)** | 5 rooms × 2 versions × 500 users = 5K images/month | ~$150-250 |
-| **Neon DB** | Free tier (0.5GB, 100hr compute) → Scale at 1GB | $0 → $19 |
+| **Imagen (sample renders)** | 5 samples/user × 500 users = 2.5K images | ~$75-125 |
+| **Imagen (final renders)** | 1 final batch/user × 6 angles × 500 users = 3K images | ~$90-150 |
+| **Supabase DB** | Free tier (500MB, 50K auth users) → Pro ($25/mo) | $0 → $25 |
 | **Cloudflare R2** | 10GB storage, ~100K ops/month | $0 |
 | **Vercel Pro** | 1TB bandwidth, 5000 serverless hrs | $20 |
-| **Total (MVP)** | 500 active users | **~$200-320/mo** |
+| **Total (MVP)** | 500 active users | **~$200-350/mo** |
 
 ---
 
@@ -796,8 +814,11 @@ All furniture models target ≤ 5K triangles per item.
 | PUT | `/api/projects/[id]/brief` | User | 60/min | Update design brief |
 | GET | `/api/projects/[id]/chat` | User | 60/min | Get chat history |
 | POST | `/api/ai/consult` | User | 30/min | Send message to AI consultant |
-| POST | `/api/render` | User | 10/min | Trigger Gemini render |
+| POST | `/api/render/sample` | User | 15/min | Generate sample render (1 room) |
+| POST | `/api/render/final` | User | 5/min | Generate final renders (all rooms, all angles) |
 | GET | `/api/render/[id]` | User | 30/min | Get render result |
+| POST | `/api/render/angles` | User | 10/min | Save custom camera angle |
+| GET | `/api/render/angles` | User | 30/min | List auto + custom angles for project |
 | POST | `/api/export` | User | 10/min | Generate Collada/OBJ export |
 | POST | `/api/import` | User | 10/min | Re-upload and parse .dae/.obj |
 | POST | `/api/upload` | User | 10/min | Get signed URL for file upload |
@@ -1163,7 +1184,7 @@ async function getDownloadUrl(key: string): Promise<string> {
 
 ```bash
 # === Required ===
-DATABASE_URL="postgresql://user:pass@ep-xxx.ap-southeast-1.aws.neon.tech/neondb"
+DATABASE_URL="postgresql://user:***@aws-0.ap-southeast-1.pooler.supabase.com:6543/postgres"
 GEMINI_API_KEY="AIzaSy..."
 R2_ACCOUNT_ID="abc123def456"
 R2_ACCESS_KEY_ID="abc123"
@@ -1221,18 +1242,16 @@ jobs:
           vercel-args: '--prod'
 ```
 
-### 8.4 Neon Branching for Preview Deployments
+### 8.4 Supabase Configuration for Vercel
+
+Supabase requires **connection pooling** for Vercel serverless functions (which use many short-lived connections):
 
 ```
-main branch (production) ──────────► Vercel Production
-      │
-      └── Preview (PR) ──────────► Vercel Preview
-           │
-           └── Neon Branch (db clone)
-               → Each PR gets its own isolated Postgres database
-               → Tests run against preview DB
-               → Merged to main → branch deleted
+DATABASE_URL (pooled, port 6543) → Used by Next.js API routes at runtime
+DIRECT_URL    (direct, port 5432) → Used by Prisma migrations only
 ```
+
+**Important:** Enable "Connection Pooling" in Supabase dashboard → Database → Connection pooling. This uses PgBouncer to manage serverless connection spikes.
 
 ---
 
@@ -1560,7 +1579,7 @@ export function checkWebGLSupport(): { supported: boolean; issues: string[] } {
 | Item | Plan | Monthly | Notes |
 |------|------|---------|-------|
 | **Vercel** | Pro | $20 | Includes 1TB bandwidth, 5000 serverless hrs |
-| **Neon** | Free → Scale | $0 → $19 | Free: 0.5GB, 100hr compute. Scale: 1GB, 500hr |
+| **Supabase** | Free → Pro | $0 → $25 | Free: 500MB, 50K auth users. Pro: 8GB, daily backups, built-in PgBouncer |
 | **Cloudflare R2** | Free | $0 | 10GB storage free, 1M Class A ops free |
 | **Gemini API** | Pay-as-you-go | ~$15-30 | Chat: ~$15/mo at 500 users |
 | **Imagen** | Pay-as-you-go | ~$150-250 | Renders: ~$0.04/image × 5K images |
@@ -1582,8 +1601,8 @@ export function checkWebGLSupport(): { supported: boolean; issues: string[] } {
 |-------|-------------|-----------|
 | 100 | ~$100 | Imagen renders |
 | 500 | ~$300 | Imagen renders + Vercel functions |
-| 2,000 | ~$800 | Imagen ($600+) + Neon upgrade + Vercel Pro → Team |
-| 10,000 | ~$3,500 | Need ComfyUI self-hosted (GPU); Neo → Enterprise |
+| 2,000 | ~$800 | Imagen ($600+) + Supabase upgrade ($25) + Vercel Pro → Team |
+| 10,000 | ~$3,500 | Need ComfyUI self-hosted (GPU); Supabase → Enterprise ($599/mo) |
 
 At 10K+ users, it becomes cost-effective to self-host a Stable Diffusion / ComfyUI pipeline on a GPU instance (~$200/mo for A10G on RunPod) rather than paying per-image for Imagen.
 

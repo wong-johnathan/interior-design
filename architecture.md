@@ -51,7 +51,7 @@
         ▼              ▼             ▼              ▼              ▼
 ┌──────────┐  ┌────────────┐  ┌──────────────┐  ┌──────────┐  ┌──────────┐
 │PostgreSQL │  │Cloudflare  │  │Google Gemini │  │ Google   │  │ NextAuth │
-│ (Neon)    │  │R2 (Files)  │  │API 2.5 Pro   │  │Imagen    │  │ Session  │
+│ (Supabase) │  │R2 (Files)  │  │API 2.5 Pro   │  │Imagen    │  │ Session  │
 │           │  │            │  │(Consultant)  │  │(Renders) │  │          │
 └──────────┘  └────────────┘  └──────────────┘  └──────────┘  └──────────┘
 ```
@@ -333,38 +333,146 @@ Old item returns to catalog
 | **Snap-to-grid** | `Math.round(pos / gridSize) * gridSize` on drag release |
 | **Wall snap** | Pre-calculate wall edge positions from room vertices; distance check |
 | **Ghost preview** | Clone mesh with `opacity: 0.4`, `depthWrite: false` |
-| **Context menu** | Custom shadcn-based popover on right-click / long-press |
-| **Catalog panel** | shadcn sheet component, lazy-loaded GLB thumbnails |
-| **Undo/Redo** | Zustand middleware: snapshot furniture state on each action |
+### 2.5 Render Pipeline (3-Tier)
+
+```
 ┌──────────────────────────────────────────────────────────────────┐
-│  RENDER PIPELINE (Per Room)                                       │
+│  TIER 1: PREVIEW (Free, instant)                                 │
+│  ─────────────────────────────────────                           │
+│  → The 3D viewport with PBR materials                            │
+│  → No Gemini API call needed                                     │
+│  → User sees material/colour changes in real-time                │
+│  → Screenshot quality — good enough to judge layout               │
 │                                                                   │
-│  Step 1: Position Camera                                          │
-│  → Auto-calculate best POV for this room type                    │
-│  → Living: corner view showing sofa + TV wall                    │
-│  → Kitchen: from entrance, showing counter + cabinets            │
-│  → MBR: from door, showing bed + window                          │
+│  TIER 2: SAMPLE (Low cost, ~$0.04)                                │
+│  ─────────────────────────────────────                           │
+│  → 1 room (Living Room by default) → Gemini Imagen               │
+│  → User judges: "Do I like how the AI interprets my style?"      │
+│  → Can regenerate with tweaked prompts                           │
+│  → Quality gate before committing to full batch                   │
 │                                                                   │
-│  Step 2: Render 3D Viewport to PNG                                │
-│  → Use offscreen canvas (Three.js renderer)                      │
-│  → 1024×1024 at 72dpi                                            │
-│  → Store as base64 or upload to R2 temporarily                   │
-│                                                                   │
-│  Step 3: Construct Render Prompt                                  │
-│  → Read RoomBrief for this room                                   │
-│  → Read FurnitureTemplatePlacement for this room                  │
-│  → Combine into structured prompt:                                │
-│    "Photorealistic interior... [style desc]... [furniture]..."    │
-│                                                                   │
-│  Step 4: Call Gemini Imagen                                       │
-│  → POST /api/render                                               │
-│  → Request: { image: screenshot, prompt: full_prompt }           │
-│  → Response: rendered image URL (R2)                             │
-│                                                                   │
-│  Step 5: Save & Display                                           │
-│  → Store render record in Postgres                                │
-│  → Display in gallery with room label + style tag                │
+│  TIER 3: FINAL RENDER (Full cost, ~$0.30-0.50)                   │
+│  ─────────────────────────────────────                           │
+│  → All rooms, selected angles per room                            │
+│  → Triggered only when user says "Finalize"                       │
+│  → Progress: "Rendering Room 3 of 8..."                           │
+│  → Each render uses DesignBrief per-room + camera angle           │
 └──────────────────────────────────────────────────────────────────┘
+```
+
+#### Sample Render Flow
+
+```
+User clicks [Generate Sample]
+        │
+        ▼
+┌──────────────────────────────────────────────┐
+│  Pick room to sample:                        │
+│  ● Living Room (recommended)                 │
+│  ○ Master Bedroom                            │
+│  ○ Kitchen                                   │
+│                                              │
+│  [Generate Sample (~$0.04)]   [Cancel]       │
+└──────────────────────────────────────────────┘
+        │
+        ▼
+POST /api/render/sample
+{ projectId, roomType: "living", resolution: "1024x1024" }
+        │
+        ▼
+┌──────────────────────────────────────────────┐
+│  Sample Render — Living Room                  │
+│  ┌──────────────────────────────────────┐    │
+│  │                                      │    │
+│  │  [AI-generated image]               │    │
+│  │                                      │    │
+│  └──────────────────────────────────────┘    │
+│                                              │
+│  "Does this match your vision?"              │
+│                                              │
+│  [Looks Great! → Final Render 🚀]            │
+│  [Tweak Prompt 🔄]                           │
+│                                              │
+│  ┌─ Tweak ───────────────────────────┐      │
+│  │ "Make it warmer, more plants,     │      │
+│  │  and change sofa to beige"        │      │
+│  └───────────────────────────────────┘      │
+└──────────────────────────────────────────────┘
+```
+
+#### Final Render Flow
+
+```
+User clicks [Final Render]
+        │
+        ▼
+┌──────────────────────────────────────────────┐
+│  Final Render — Select Angles                │
+│                                              │
+│  Living: ☑ Corner View  ☑ Entrance  ☐ Window│
+│  MBR:    ☑ Door View    ☑ Bedside           │
+│  Kitchen:☑ Entrance     ☑ Close-up          │
+│  Bed 2:  ☑ Door View    ☐ Custom [+ Add]   │
+│                                              │
+│  6 renders total  ~$0.24                     │
+│                                              │
+│  [Generate All 6]                            │
+└──────────────────────────────────────────────┘
+        │
+        ▼
+For each room:
+  For each selected angle:
+    1. Position camera to preset position
+    2. Capture viewport to PNG (offscreen canvas)
+    3. Build render prompt from DesignBrief[room]
+    4. Call Gemini Imagen (image + prompt → render)
+    5. Save to R2, store record in DB
+        │
+        ▼
+Display in gallery with progress bar
+```
+
+#### Camera Presets (Auto-Calculated)
+
+```typescript
+const CAMERA_PRESETS: Record<string, CameraAngle[]> = {
+  living: [
+    { label: "Corner View",     position: [4.5, 1.6, 5.0], target: [2.5, 1.2, 2.5] },
+    { label: "Entrance View",   position: [0.5, 1.6, 0.5], target: [3.0, 1.2, 2.0] },
+    { label: "Window-side",     position: [4.0, 1.6, 1.0], target: [2.0, 1.2, 2.5] },
+  ],
+  mbr: [
+    { label: "Door View",       position: [0.5, 1.6, 0.5], target: [2.5, 1.0, 2.0] },
+    { label: "Bedside View",    position: [3.5, 1.6, 3.0], target: [2.0, 0.8, 3.5] },
+  ],
+  kitchen: [
+    { label: "Entrance View",   position: [0.5, 1.6, 3.0], target: [2.5, 1.2, 1.5] },
+    { label: "Counter Close-up",position: [2.0, 1.6, 0.5], target: [2.0, 1.4, 1.5] },
+  ],
+  // ... bedroom, toilet, balcony
+};
+```
+
+#### Custom Camera Angle
+
+```typescript
+interface CustomAngle {
+  id: string;
+  projectId: string;
+  roomType: string;          // "living", "mbr", etc.
+  label: string;             // "My breakfast bar view"
+  position: Vec3;            // Camera position in world space
+  target: Vec3;              // Look-at point
+  isCustom: boolean;         // true
+}
+
+// UI: Camera Mode
+// User enters "Camera Mode" in viewport
+// → Controls switch from Orbit to Free Camera
+// → Position camera freely
+// → Click [📷 Capture This Angle]
+// → Name it: "Kitchen Breakfast Bar"
+// → Saved to project → rendered in final batch
 ```
 
 ---

@@ -38,7 +38,7 @@ A web application that lets HDB homeowners bring their future flat to life — f
 | **Chat Interface** | Custom component (shadcn-based) | Multi-turn conversational AI design consultant |
 | **State Management** | Zustand | Lightweight, R3F-compatible, no boilerplate |
 | **Floor Plan Annotation** | react-konva (Canvas overlay) | Admin panel wall-drawing tool |
-| **Database** | PostgreSQL (Neon) + Prisma ORM | Users, projects, BTO projects, templates, design briefs, renders |
+| **Database** | PostgreSQL (Supabase) + Prisma ORM | Users, projects, BTO projects, templates, design briefs, renders |
 | **File Storage** | Cloudflare R2 | S3-compatible, zero egress fees |
 | **3D Export** | Three.js ColladaExporter / OBJExporter | Client-side export; no backend needed |
 | **AI Design Consultant** | Gemini 2.5 Pro | Multi-turn chat → structured Design Brief JSON |
@@ -112,22 +112,33 @@ All heavy 3D operations (mesh generation, format export/import) are handled **cl
    { overall: "Japandi"                                          │
      rooms: { living: {...}, kitchen: {...}, mbr: {...} } }      │
        │                                                         │
-6a. [Auto-Furnish with Templates]  ── or ──  6b. [Export to SketchUp]
-    │ AI selects furniture templates         │ User edits in SketchUp
-    │ based on room type + design brief      │ and re-uploads .dae
-    │ User can accept or tweak               │
-       │                                                         │
-       └──────────────────────┬──────────────────────────────────┘
-                              │
-7. Generate Photorealistic Renders
-   │ Per-room: Living Room, MBR, Bedroom 2, Kitchen, etc.
-   │ Each render uses its own design brief entry
-   │ Gemini Imagen: 3D model view + style prompt → realistic image
+6. [Auto-Furnish with Templates]  or  [Export to SketchUp]
+   │ Furniture placed in 3D viewport (PBR materials visible)
+   │ Real-time style preview — no AI render needed
        │
-8. Gallery & Share
-   │ View all renders in a gallery
-   │ Download, share link with before/after slider
-   │ Go back to edit any step
+7. Generate Sample Render
+   │ 1 room (Living Room by default) → Gemini Imagen
+   │ Cost: ~$0.04 per sample
+   │ User reviews: "Does this match your vision?"
+       │
+   ├── [Looks Great!] ──────────────────────────────────────┐
+   │                                                        │
+8. Tweak & Iterate (if needed)                              │
+   │ User adjusts: style prompt, furniture, materials       │
+   │ → [Regenerate Sample] until satisfied                  │
+   │ Cost: ~$0.04 per iteration                              │
+       │                                                    │
+9. Final Render                                             │
+   │ All rooms, multiple auto-calculated angles             │
+   │ User can also add custom camera angles                 │
+   │ Cost: ~$0.30-0.50 for full HDB unit                     │
+   │ Progress: "Rendering Room 3 of 8..."                   │
+       │                                                    │
+10. Gallery & Share                                         │
+    │ View all renders by room  │  Download HD
+    │ Share link with slider    │  Add custom angles
+    │ Breadcrumb: Brief > Furniture > Renders
+    │ Click any breadcrumb to go back and edit
 ```
 
 ---
@@ -374,13 +385,16 @@ Furniture: Low-profile wooden sofa, oval coffee table, tatami-style rug, floor l
 
 ## 10. Success Criteria
 
-- [ ] New user can go from signup → first render in under 10 minutes
+- [ ] New user can go from signup → first sample render in under 10 minutes
 - [ ] AI consultant produces coherent per-room design brief after ≤ 5 chat turns
+- [ ] Sample render costs < $0.05 per iteration
+- [ ] User can iterate on sample render at least 3 times before finalizing
+- [ ] Final render batch produces all rooms at configured angles
 - [ ] At least 5 completed projects on the platform before public launch
 - [ ] Collada export → SketchUp open → re-import works without errors
-- [ ] Gemini renders are visually distinct per room (Living ≠ Kitchen style)
 - [ ] All flows work on mobile (viewport, chat, render gallery)
 - [ ] Admin can add a new BTO project + configure all rooms in under 15 minutes
+- [ ] Breadcrumb navigation allows revisiting any stage without losing progress
 
 ---
 

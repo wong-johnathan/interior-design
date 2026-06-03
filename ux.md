@@ -13,25 +13,25 @@
 ## 1. User Journey Map
 
 ```
- ┌────────────┐     ┌────────────┐     ┌──────────────┐     ┌────────────┐     ┌─────────────┐     ┌──────────────┐     ┌──────────────┐
- │  Sign Up    │ ──► │  BTO/Buy   │ ──► │  3D Model    │ ──► │  AI Design  │ ──► │  Furnish or  │ ──► │  Photoreal   │ ──► │  Gallery &   │
- │  (OAuth)    │     │  Project   │     │  Preview    │     │  Consultant │     │  Export      │     │  Renders     │     │  Share       │
- └────────────┘     └────────────┘     └──────────────┘     └────────────┘     └─────────────┘     └──────────────┘     └──────────────┘
-                         │                   │                   │                   │                   │                   │
-                     Search BTO         See empty 3D         Chat about          Pick furniture      Generate           View renders
-                     by project name    flat with all        style per room       template or         per-room           Download /
-                         │             room labels            │  export to       realistic images     share link
-                         ▼                   ▼                   ▼            SketchUp ▼                   ▼                   ▼
-                    Select flat         Orbit / zoom /       AI asks Qs,        Template places     Gemini Imagen       Public gallery
-                    type (4/5 rm)      walkthrough          user answers        furniture in         transforms 3D       with before/
-                         │                   │             brief builds         correct spots        view + brief        after slider
-                     Floor plan         Real-time           per room                  │            → styled photo
-                     preview            material             │                   OR user exports           │
-                         │             preview from          │                   to SketchUp,         Options:
-                         ▼             brief changes         ▼                   edits, re-import     download full res
-                    Ready to                          User says "I'm                              share link
-                    start styling?                     happy!" → Brief                            regenerate
-                                                        finalized
+┌────────────┐     ┌────────────┐     ┌──────────────┐     ┌────────────┐     ┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────────┐
+│  Sign Up    │ ──► │  BTO/Buy   │ ──► │  3D Model    │ ──► │  AI Design  │ ──► │  Furnish or  │ ──► │  Sample      │ ──► │  Final       │ ──► │  Gallery &  │
+│  (OAuth)    │     │  Project   │     │  Preview    │     │  Consultant │     │  Export      │     │  Render      │     │  Render      │     │  Share      │
+└────────────┘     └────────────┘     └──────────────┘     └────────────┘     └─────────────┘     └─────────────┘     └──────────────┘     └──────────────┘
+                        │                   │                   │                   │                   │                   │                    │
+                    Search BTO         See empty 3D         Chat about          Pick furniture      1 room sample       All rooms,          View rendered
+                    by project name    flat with all        style per room       template or          via Gemini          selected angles      gallery with
+                        │             room labels            │  export to       Imagen              batch render         angle toggle
+                        ▼                   ▼                   ▼            SketchUp ▼               │                    ▼                  ▼
+                   Select flat         Orbit / zoom /       AI asks Qs,        Template places     "Does this           Progress bar:       Download HD
+                   type (4/5 rm)      walkthrough          user answers         furniture in        match your           "3 of 6 rooms"      share link
+                        │                   │             brief builds        correct spots        vision?"                   │        before/after slider
+                    Floor plan         Real-time           per room                  │                    │             Renders appear          │
+                    preview             material            │              OR user exports         [Looks Great!]        in gallery        Shareable
+                        │             preview from          │              to SketchUp,           → Final Render               │          public page
+                   Ready to           brief changes          ▼              edits, re-import      [Tweak Prompt]         Breadcrumb         │
+                   start styling?                      User says "I'm                              → Regenerate          nav active      Go back to edit
+                                                       happy!" → Brief                            (up to 5x)                            any step
+                                                        finalized                                                                      via breadcrumb
 ```
 
 ---
@@ -365,41 +365,214 @@ When user enters Tweak Mode, the 3D viewport transforms:
 
 ---
 
-### Screen 8: Photorealistic Renders Gallery
+### Screen 8: Breadcrumb Navigation
+
+Persistent across the entire studio, accessible at the top of every screen:
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  Your Renders                                 [Batch All] │
+│  🏠 My Project                             [Save Draft]  │
 │                                                           │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐              │
-│  │        │ │        │ │        │ │        │              │
-│  │ Living │ │  MBR   │ │ Bed 2  │ │ Kitchen│              │
-│  │ Room   │ │        │ │        │ │        │              │
-│  │        │ │        │ │        │ │        │              │
-│  │   🖼️   │ │   🖼️   │ │   🖼️   │ │   🖼️   │              │
-│  │        │ │        │ │        │ │        │              │
-│  └────────┘ └────────┘ └────────┘ └────────┘              │
+│  Design Brief  >  Furniture  >  Renders                  │
+│       ✓               ✓           ◉ (you are here)       │
 │                                                           │
-│  ┌─ Before/After Slider ───────────────────────────────┐  │
-│  │                                                     │  │
-│  │     ┌──────┐      ┌──────┐                          │  │
-│  │     │Empty │  ◄──► │Styled│                          │  │
-│  │     └──────┘      └──────┘                          │  │
-│  │                                                     │  │
-│  │  [Download HD] [Share Link] [Regenerate]            │  │
-│  └─────────────────────────────────────────────────────┘  │
+│  ═══════════════════════════════════════════════════════  │
+│                                                           │
+│  (Click any breadcrumb to go back and edit)               │
+│  → Brief: chat re-opens, furniture gets "update?" prompt  │
+│  → Furniture: tweak mode re-activates                     │
+│  → Renders: gallery (current view)                        │
+│  → Changes mark existing renders as "stale"              │
 └──────────────────────────────────────────────────────────┘
+```
+
+**State preservation across breadcrumbs:**
+
+| Action | What happens |
+|--------|-------------|
+| Click **Design Brief** | Chat panel re-opens with full history. User can add more messages. Brief updates in real-time. Furniture gets: "Your style has changed — update furniture to match?" |
+| Click **Furniture** | Tweak mode reactivates. All previous furniture positions preserved. Stale renders get: "Out of date — regenerate?" badge. |
+| Click **Renders** | Returns to gallery. Current state displayed. |
+| Modify chat → new brief | Auto-furniture shows "Update" prompt. Manual furniture stays unless user chooses to re-apply. |
+| Modify furniture | Existing renders marked stale with "Regenerate" button. |
+
+---
+
+### Screen 9: Sample Render (Tier 2)
+
+The quality gate before committing to a full batch. Generates 1 image to validate the AI understands the user's style.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  ⬅️ Back to Studio           Breadcrumb: ⋯ > ⋯ > Sample    │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Step 1: Pick a room to sample                                │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │  Which room should we render as a sample?             │    │
+│  │                                                       │    │
+│  │  ● Living Room (recommended — shows most detail)     │    │
+│  │  ○ Master Bedroom                                     │    │
+│  │  ○ Kitchen                                            │    │
+│  │                                                       │    │
+│  │  [Generate Sample (~$0.04)]                           │    │
+│  └──────────────────────────────────────────────────────┘    │
+│                                                               │
+│  ═══════════════════════════════════════════════════════════  │
+│                                                               │
+│  Step 2: Review your sample                                   │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │                                                       │    │
+│  │  Living Room — Sample Render                          │    │
+│  │  ┌──────────────────────────────────────────────┐    │    │
+│  │  │                                                │    │    │
+│  │  │         [AI-generated photorealistic           │    │    │
+│  │  │          interior image]                       │    │    │
+│  │  │                                                │    │    │
+│  │  └──────────────────────────────────────────────┘    │    │
+│  │                                                       │    │
+│  │  Does this match your vision?                         │    │
+│  │                                                       │    │
+│  │  [Looks Great! → Final Render 🚀]                     │    │
+│  │  [Tweak Prompt 🔄]                                    │    │
+│  │                                                       │    │
+│  └──────────────────────────────────────────────────────┘    │
+│                                                               │
+│  ┌─ Tweak Prompt ───────────────────────────────────────┐    │
+│  │  "Make the space warmer, add more plants,            │    │
+│  │   and change the sofa to beige"                      │    │
+│  │                                                       │    │
+│  │  [🔄 Regenerate Sample]                               │    │
+│  │  (Cost: ~$0.04 per regeneration. Current: 1 of 5)    │    │
+│  └──────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 **States:**
 
 | State | Message |
 |-------|---------|
-| **No renders yet** | "Generate your first render to see your design come to life!" |
-| **Rendering** | Progress bar per room with ETA |
-| **Render complete** | Gallery grid with thumbnails |
-| **Render failed** | "Couldn't generate this render. Try again or adjust your prompt." |
-| **Batch complete** | Notification: "All rooms rendered!" |
+| **No sample yet** | "Generate a sample to preview how the AI will interpret your style." |
+| **Generating** | Spinner + "AI is creating your preview render..." |
+| **Sample ready** | "Does this match your vision?" prompt appears |
+| **User says "Looks Great!"** | Transition to Final Render screen (Screen 10) |
+| **User regenerates** | New sample generated; counter increments |
+| **Max iterations reached (5)** | "You've regenerated 5 times. Would you like to proceed to final render or start fresh with a different style?" |
+
+---
+
+### Screen 10: Final Render Configuration & Gallery (Tier 3)
+
+Triggered only after sample is approved. User selects angles per room, then batch-renders.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  ⬅️ Back to Sample     Breadcrumb: ⋯ > ⋯ > Final Render    │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│  Final Render — Select Angles Per Room                        │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │  Living Room (Japandi)                                │    │
+│  │  ☑ [Corner View]    ☑ [Entrance View]                │    │
+│  │  ☐ [Window-side]                                      │    │
+│  │                                                       │    │
+│  │  Master Bedroom (Japandi)                             │    │
+│  │  ☑ [Door View]       ☑ [Bedside View]                │    │
+│  │                                                       │    │
+│  │  Kitchen (Vintage)                                    │    │
+│  │  ☑ [Entrance View]   ☑ [Counter Close-up]            │    │
+│  │                                                       │    │
+│  │  Bedroom 2 (Japandi)                                  │    │
+│  │  ☑ [Door View]       ☐ [Custom + Add...]             │    │
+│  │                                                       │    │
+│  │  ─────────────────────────────────────────────        │    │
+│  │  6 renders selected   Estimated cost: ~$0.24          │    │
+│  │                                                       │    │
+│  │  [🖼️ Generate All 6 Renders]    [← Back to Sample]   │    │
+│  └──────────────────────────────────────────────────────┘    │
+│                                                               │
+│  ┌─ Custom Camera Angle ────────────────────────────────┐    │
+│  │  Capture your own angle:                              │    │
+│  │                                                       │    │
+│  │  → Click [📷 Camera Mode] in the 3D viewport         │    │
+│  │  → Controls switch to free camera                    │    │
+│  │  → Move camera to your desired angle                 │    │
+│  │  → Click [Capture This View]                         │    │
+│  │  → Name it: "Kitchen Breakfast Bar"                  │    │
+│  │  → Appears in the list above as "Custom +"           │    │
+│  └──────────────────────────────────────────────────────┘    │
+│                                                               │
+│  ═══════════════════════════════════════════════════════════  │
+│                                                               │
+│  Render Progress                                              │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │  ■■■■■■■■■□□□□□□□□□  40%                            │    │
+│  │  Rendering Room 3 of 6: Kitchen — Entrance View      │    │
+│  │                                                       │    │
+│  │  ✅ Living Room — Corner View                         │    │
+│  │  ✅ Living Room — Entrance View                       │    │
+│  │  ⏳ Kitchen — Entrance View    (currently rendering)  │    │
+│  │  ⏳ Kitchen — Close-up        (queued)                │    │
+│  │  ⏳ MBR — Door View            (queued)               │    │
+│  │  ⏳ MBR — Bedside View         (queued)               │    │
+│  └──────────────────────────────────────────────────────┘    │
+│                                                               │
+│  ═══════════════════════════════════════════════════════════  │
+│                                                               │
+│  Render Gallery (after completion)                            │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │  [Living Room] [MBR] [Kitchen] [Bed 2] [All ▼]      │    │
+│  │                                                       │    │
+│  │  ┌────────┐ ┌────────┐                               │    │
+│  │  │Corner  │ │Entrance│                               │    │
+│  │  │  View  │ │  View  │                               │    │
+│  │  │        │ │        │                               │    │
+│  │  │   🖼️   │ │   🖼️   │                               │    │
+│  │  └────────┘ └────────┘                               │    │
+│  │                                                       │    │
+│  │  ┌─ Before/After Slider ──────────────────────────┐  │    │
+│  │  │   Empty         Styled                          │  │    │
+│  │  │   ┌──────┐  ◄──►  ┌──────┐                      │  │    │
+│  │  │   └──────┘       └──────┘                      │  │    │
+│  │  │                                                 │  │    │
+│  │  │  [Download HD] [Share Link] [Regenerate Angle]  │  │    │
+│  │  └─────────────────────────────────────────────────┘  │    │
+│  └──────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**States:**
+
+| State | Message |
+|-------|---------|
+| **No renders yet** | "Approve the sample render first to proceed to final rendering." |
+| **Rendering** | Progress bar + per-room status + ETA |
+| **Render complete** | Gallery with room tabs + angle toggle |
+| **Single angle failed** | "This view couldn't be rendered. Try adjusting the camera or regenerate." |
+| **Batch completed** | Toast: "🎉 All 6 renders ready! View gallery." |
+| **Renders stale** | "Design has changed since renders were generated. Regenerate?" badge plus per-angle Regenerate button |
+
+---
+
+### Screen 11: Studio Top Bar (Persistent Breadcrumb)
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  ← Back to Dashboard                    Save    Share  ⋮     │
+│                                                               │
+│  🏠 Verandah Kallang 2024 — 4-Room Model A                   │
+│                                                               │
+│  Design Brief  >  Furniture  >  Renders                      │
+│       ✓               ✓           ◉                           │
+│                                                               │
+│  (Each breadcrumb section is clickable. Active = ◉)           │
+│  ✓ means that stage has been completed at least once.        │
+│  Missing stage = dimmed until previous stage is done.        │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 
