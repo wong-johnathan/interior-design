@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Home, Search, LogIn, LogOut, LayoutDashboard } from 'lucide-react';
+import { Home, Search, LogIn, LogOut, LayoutDashboard, Shield } from 'lucide-react';
 
 export function Header() {
   const { data: session } = useSession();
@@ -65,6 +65,15 @@ export function Header() {
                 <LayoutDashboard className="w-4 h-4 mr-2" />
                 My Projects
               </DropdownMenuItem>
+              {(session.user as any).role === 'admin' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => window.location.href = '/admin'}>
+                    <Shield className="w-4 h-4 mr-2 text-amber-600" />
+                    <span className="text-amber-600 font-medium">Admin Panel</span>
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => signOut()}>
                 <LogOut className="w-4 h-4 mr-2" />

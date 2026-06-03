@@ -9,15 +9,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user }) {
+      // Always allow sign in with Google
+      return true;
+    },
     async session({ session, token }) {
       if (session.user && token.sub) {
         session.user.id = token.sub;
+      }
+      if (session.user && token.role) {
+        session.user.role = token.role as string;
       }
       return session;
     },
     async jwt({ token, account, profile }) {
       if (account) {
         token.id = account.providerAccountId;
+      }
+      // Check if user is admin based on email
+      if (token.email) {
+        const adminEmails = (process.env.AUTH_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim().toLowerCase());
+        token.role = adminEmails.includes(token.email.toLowerCase()) ? 'admin' : 'user';
       }
       return token;
     },
@@ -40,6 +52,11 @@ declare module 'next-auth' {
       name?: string | null;
       email?: string | null;
       image?: string | null;
+      role?: string;
     };
+  }
+
+  interface JWT {
+    role?: string;
   }
 }

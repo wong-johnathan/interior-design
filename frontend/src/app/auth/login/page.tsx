@@ -32,13 +32,18 @@ export default function LoginPage() {
           By signing in, you agree to our Terms and Privacy Policy.
         </div>
 
-        <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-          <div className="text-xs text-slate-400 mb-2">Admin access</div>
+        <div className="mt-6 pt-4 border-t border-slate-100 space-y-3">
+          <div className="text-center">
+            <p className="text-xs text-slate-400 mb-1">Admin access for project managers</p>
+            <p className="text-[10px] text-slate-300">
+              Sign in with an authorized admin email to access the admin panel
+            </p>
+          </div>
           <button
             onClick={() => signIn('google', { callbackUrl: '/admin' })}
-            className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+            className="w-full text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-lg px-3 py-2 hover:bg-amber-100 transition font-medium"
           >
-            Sign in as admin →
+            Sign in as Admin →
           </button>
         </div>
       </div>

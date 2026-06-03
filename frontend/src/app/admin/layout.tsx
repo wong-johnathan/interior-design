@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   LayoutDashboard,
   Building2,
@@ -12,6 +13,8 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeft,
+  ShieldAlert,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -27,7 +30,48 @@ const NAV_ITEMS = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [collapsed, setCollapsed] = useState(false);
+
+  // Auth check
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-amber-600 animate-spin mx-auto mb-4" />
+          <p className="text-sm text-slate-500">Checking access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session?.user) {
+    router.push('/auth/login');
+    return null;
+  }
+
+  if (session.user.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert className="w-8 h-8 text-amber-600" />
+          </div>
+          <h1 className="text-xl font-bold text-slate-900 mb-2">Access Denied</h1>
+          <p className="text-sm text-slate-500 mb-6">
+            You don&apos;t have admin privileges. Contact your administrator to request access.
+          </p>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-700 transition"
+          >
+            Go to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const sidebarWidth = collapsed ? 'w-16' : 'w-60';
 
