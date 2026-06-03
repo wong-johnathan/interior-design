@@ -4,481 +4,538 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Draft v1.0 |
+| **Status** | Draft v1.1 |
 | **Date** | 2026-06-03 |
 | **Author** | Johnathan Wong |
+| **Previous** | v1.0 (initial draft) |
 
 ---
 
 ## 1. System Overview
 
 ```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                          CLIENT (Browser)                                 │
+│                                                                           │
+│  ┌────────────┐  ┌──────────────────────┐  ┌────────────────────────┐   │
+│  │ Next.js UI  │  │  3D Engine (R3F)      │  │ Design Studio          │   │
+│  │             │  │  ┌────────────────┐   │  │ ┌──────────────────┐ │   │
+│  │ Landing     │  │  │ Mesh Generator │   │  │ │ AI Consultant    │ │   │
+│  │ Browse      │  │  │(BufferGeom)    │   │  │ │ Chat Interface   │ │   │
+│  │ Studio      │  │  │ Material Swap  │   │  │ │ Per-Room Brief   │ │   │
+│  │ Gallery     │  │  │ Export/Import  │   │  │ │ Design Summary   │ │   │
+│  │ Admin       │  │  │ Furniture      │   │  │ └──────────────────┘ │   │
+│  └────────────┘  │  │ Placement      │   │  └────────────────────────┘   │
+│                  │  └────────────────┘   │                               │
+│                  └──────────────────────┘                               │
+│                                                                           │
+│  ┌──────────────────────────────────────────────────────────────────┐    │
+│  │  Floor Plan Annotation (react-konva) — Admin Only                 │    │
+│  │  [Upload BTO Floor Plan] → [Draw Rooms] → [Label] → [Save]       │    │
+│  └──────────────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────┘
+                              │ API Calls (HTTPS)
+                              ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                     NEXT.JS API ROUTES (Vercel)                           │
+│                                                                           │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │ BTO      │  │ Projects │  │ AI       │  │ Render   │  │ Auth     │  │
+│  │ Projects │  │ CRUD     │  │ Consultant│  │ (Gemini  │  │ (NextAuth│  │
+│  │ + Models │  │          │  │ (Chat    │  │  Imagen) │  │  + OAuth)│  │
+│  │ CRUD     │  │          │  │  + Brief)│  │          │  │          │  │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘  │
+│       │              │             │              │              │       │
+└───────┼──────────────┼─────────────┼──────────────┼──────────────┼───────┘
+        │              │             │              │              │
+        ▼              ▼             ▼              ▼              ▼
+┌──────────┐  ┌────────────┐  ┌──────────────┐  ┌──────────┐  ┌──────────┐
+│PostgreSQL │  │Cloudflare  │  │Google Gemini │  │ Google   │  │ NextAuth │
+│ (Neon)    │  │R2 (Files)  │  │API 2.5 Pro   │  │Imagen    │  │ Session  │
+│           │  │            │  │(Consultant)  │  │(Renders) │  │          │
+└──────────┘  └────────────┘  └──────────────┘  └──────────┘  └──────────┘
+```
+
+---
+
+## 2. Core Components
+
+### 2.1 AI Design Consultant
+
+The most architecturally significant component. It is a **stateful, conversational agent** that maintains a **Design Brief JSON** across multi-turn exchanges.
+
+```
+User: "I want Japandi overall"
+        │
+        ▼
+┌──────────────────────────────────────────┐
+│  API: POST /api/ai/consult                │
+│  {                                        │
+│    projectId: "abc",                      │
+│    message: "I want Japandi overall",     │
+│    chatHistory: [...],                    │
+│    currentBrief: { rooms: {} }            │
+│  }                                        │
+└────────────────┬─────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────┐
+│  Gemini 2.5 Pro                           │
+│  System Prompt: Interior Design Consultant│
+│  Input: chat history + current brief       │
+│  Output: {                                 │
+│    response: "Great! Light oak or dark    │
+│              walnut for the floor?",      │
+│    updatedBrief: { overall_vibe, rooms }  │
+│  }                                        │
+└────────────────┬─────────────────────────┘
+                 │
+                 ▼
+┌──────────────────────────────────────────┐
+│  Response to client:                      │
+│  {                                        │
+│    message: "Great! Light oak...",        │
+│    briefDiff: { rooms.living.floor },     │
+│    fullBrief: { ... }                     │
+│  }                                        │
+│                                           │
+│  Client: applies briefDiff to 3D viewport │
+│  (real-time material preview)             │
+└──────────────────────────────────────────┘
+```
+
+**Architecture decisions:**
+
+| Decision | Rationale |
+|----------|-----------|
+| **Server-side chat state** | Design brief saved to DB after each turn. User can refresh or come back later. |
+| **Streaming responses** | Use Gemini streaming for typing-effect in chat. Feels more conversational. |
+| **Brief diff → 3D preview** | When the AI updates the brief (e.g. "floor = light oak"), client immediately applies it to the 3D model. User sees changes in real-time. |
+| **No RAG** | The AI consultant doesn't need external knowledge — it's purely conversational + structured output. |
+
+### 2.2 Design Brief Data Model
+
+The Design Brief is the **single source of truth** for the entire project. It flows from the AI consultant → 3D material engine → Gemini render prompt.
+
+```typescript
+interface DesignBrief {
+  overallVibe: string;           // "Japandi", "Industrial", etc.
+  rooms: Record<string, RoomBrief>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface RoomBrief {
+  roomType: string;              // "living", "kitchen", "mbr"
+  label: string;                 // "Living Room"
+  style: string;                 // "Japandi", "Vintage", ""
+  description: string;           // Full natural language description
+  wallColor: string;             // hex color or material name
+  wallFinish: string;            // "matte", "satin", "textured"
+  floorType: string;             // "parquet", "tiles", "laminate", "vinyl"
+  floorColor: string;            // "light oak", "dark walnut", "white marble"
+  accentColor: string;           // hex or material name
+  furnitureStyle: string;        // "minimal", "warm", "maximalist"
+  lighting: string;              // "warm 2700K", "cool 4000K", "natural"
+  specialNotes: string;          // "needs study corner", "play area for kids"
+  renderPrompt: string;          // Auto-constructed from above fields
+}
+
+interface FurnitureTemplatePlacement {
+  templateId: string;
+  roomType: string;
+  roomLabel: string;
+  furniture: FurnitureItem[];
+  applied: boolean;              // User accepted or declined
+}
+```
+
+### 2.3 Furniture Template System (Option C — MVP)
+
+```
+┌──────────────────────────────────────────────┐
+│  FurnitureTemplate                            │
+│  {                                            │
+│    id: "scandi-living-01",                   │
+│    name: "Scandinavian Living Room Set",      │
+│    category: "living",                        │
+│    styleTag: "scandinavian",                  │
+│    roomType: "living",                        │
+│    furniture: [                               │
+│      { type: "sofa", label: "3-Seater Sofa", │
+│        position: { x: 0, y: 0, z: 0 },       │
+│        rotation: { x: 0, y: 90, z: 0 },       │
+│        modelUrl: "r2://furniture/sofa.glb",  │
+│        dimensions: { w: 2.0, h: 0.8, d: 0.9  │
+│      },                                       │
+│      { type: "coffee_table", ... },           │
+│      { type: "rug", ... },                   │
+│      { type: "floor_lamp", ... },            │
+│      { type: "tv_console", ... }             │
+│    ]                                          │
+│  }                                            │
+└──────────────────────────────────────────────┘
+
+Placement Logic:
+1. Fetch template matching roomType + styleTag
+2. Scale furniture items relative to room dimensions
+3. Position using rule-based anchors:
+   - Sofa: against longest uninterrupted wall, facing TV wall
+   - Bed: centered on bedroom wall, 50cm from each side
+   - Dining table: center of dining area
+   - Kitchen: along counter edge
+4. User can accept, reject, or adjust individual pieces
+```
+
+### 2.4 Render Pipeline
+
+```
 ┌──────────────────────────────────────────────────────────────────┐
-│                        CLIENT (Browser)                           │
+│  RENDER PIPELINE (Per Room)                                       │
 │                                                                   │
-│  ┌──────────┐  ┌──────────────────────┐  ┌──────────────────┐   │
-│  │ Next.js  │  │  3D Engine (R3F)      │  │ Style Studio     │   │
-│  │ Pages/UI │  │  ┌────────────────┐   │  │ ┌──────────────┐│   │
-│  │          │  │  │ Mesh Generator │   │  │ │ Presets      ││   │
-│  │ shadcn/ui│  │  │ (BufferGeom)  │   │  │ │ AI Prompt    ││   │
-│  │ Tailwind │  │  │ Material Swap │   │  │ │ Apply Styles ││   │
-│  │          │  │  │ Export/Import │   │  │ └──────────────┘│   │
-│  └──────────┘  │  └────────────────┘   │  └──────────────────┘   │
-│                └──────────────────────┘                           │
+│  Step 1: Position Camera                                          │
+│  → Auto-calculate best POV for this room type                    │
+│  → Living: corner view showing sofa + TV wall                    │
+│  → Kitchen: from entrance, showing counter + cabinets            │
+│  → MBR: from door, showing bed + window                          │
 │                                                                   │
-│  ┌──────────────────────────────────────────────────────────┐    │
-│  │  Floor Plan Annotation (react-konva)                      │    │
-│  │  [Upload Image] → [Draw Walls] → [Label Rooms] → [Save]  │    │
-│  └──────────────────────────────────────────────────────────┘    │
+│  Step 2: Render 3D Viewport to PNG                                │
+│  → Use offscreen canvas (Three.js renderer)                      │
+│  → 1024×1024 at 72dpi                                            │
+│  → Store as base64 or upload to R2 temporarily                   │
+│                                                                   │
+│  Step 3: Construct Render Prompt                                  │
+│  → Read RoomBrief for this room                                   │
+│  → Read FurnitureTemplatePlacement for this room                  │
+│  → Combine into structured prompt:                                │
+│    "Photorealistic interior... [style desc]... [furniture]..."    │
+│                                                                   │
+│  Step 4: Call Gemini Imagen                                       │
+│  → POST /api/render                                               │
+│  → Request: { image: screenshot, prompt: full_prompt }           │
+│  → Response: rendered image URL (R2)                             │
+│                                                                   │
+│  Step 5: Save & Display                                           │
+│  → Store render record in Postgres                                │
+│  → Display in gallery with room label + style tag                │
 └──────────────────────────────────────────────────────────────────┘
-                          │  API Calls (HTTPS)
-                          ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    NEXT.JS API ROUTES (Vercel)                     │
-│                                                                   │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────────┐  │
-│  │ Templates│  │ Projects │  │ Render   │  │ Auth            │  │
-│  │ CRUD     │  │ CRUD     │  │ Proxy    │  │ (NextAuth.js)   │  │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └───────┬─────────┘  │
-│       │              │             │                │             │
-└───────┼──────────────┼─────────────┼────────────────┼─────────────┘
-        │              │             │                │
-        ▼              ▼             ▼                ▼
-┌──────────┐  ┌────────────┐  ┌──────────────┐  ┌──────────┐
-│PostgreSQL │  │Cloudflare  │  │Google Gemini │  │ NextAuth │
-│ (Neon)    │  │R2 (Files)  │  │API (Imagen)  │  │ Session  │
-└──────────┘  └────────────┘  └──────────────┘  └──────────┘
 ```
-
-### Key Architectural Decision: No Separate Backend
-
-Unlike many 3D web apps, this project does **not** require a separate Python/FastAPI server or a Redis queue. All geometry processing is done client-side in Three.js:
-
-| Operation | Where | Why |
-|-----------|-------|-----|
-| 3D Mesh Generation | Browser (R3F) | Room data is simple polygons; BufferGeometry is instant |
-| Collada Export | Browser (Three.js exporter) | Runs in a Web Worker, no server load |
-| Collada Import | Browser (Three.js loader) | Parses geometry client-side |
-| Material Swapping | Browser (R3F) | Three.js PBR materials update in real-time |
-| Gemini Rendering | Next.js API route (proxy) | Hides API key; response streams back to client |
-| File Storage | Next.js API route → R2 | Signed URLs for direct upload/download |
-
-This keeps the architecture **simple, deployable on Vercel alone**, and avoids the operational cost of managing a Python service.
 
 ---
 
-## 2. Detailed Component Architecture
+## 3. Key Architecture Decisions
 
-### 2.1 Frontend Architecture
+| Decision | Choice | Alternative Considered | Why Chosen |
+|----------|--------|----------------------|------------|
+| AI Consultant state | Server-side (DB) | Client-only in-memory | User can refresh/return; shared history |
+| Design Brief source | AI consultant output | User fills form directly | Conversational is faster, more creative |
+| Furniture system | Curated templates | AI-generated layout | Reliable, controllable, faster MVP |
+| Render engine | Gemini Imagen (img2img) | Stable Diffusion + ControlNet | Gemini has native image conditioning; simpler API |
+| 3D geometry | Client-side Three.js | Server-side Python (trimesh) | No backend needed; sub-second mesh gen |
+| Chat protocol | Streaming SSE | WebSocket | Simpler infrastructure; Vercel-compatible |
+| BTO data model | Admin-curated | Scrape HDB website | Reliable, curated quality; no stale data |
+
+---
+
+## 4. API Routes
+
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/auth/[...nextauth]` | * | NextAuth handlers |
+| `/api/bto` | GET | List published BTO projects |
+| `/api/bto` | POST | Create BTO project (admin) |
+| `/api/bto/[id]` | GET/PUT/DELETE | Single BTO project CRUD |
+| `/api/bto/[id]/models` | GET | List flat models for a BTO project |
+| `/api/bto/[id]/models` | POST | Create flat model (admin) |
+| `/api/models/[id]` | GET | Flat model with room configs |
+| `/api/models/[id]/rooms` | PUT | Update room configs (admin) |
+| `/api/projects` | POST | Create new user project |
+| `/api/projects/[id]` | GET/PUT | Get/update project |
+| `/api/projects/[id]/brief` | PUT | Update design brief |
+| `/api/projects/[id]/chat` | * | Chat history CRUD |
+| `/api/ai/consult` | POST | Send msg to AI consultant |
+| `/api/ai/consult/stream` | GET | SSE stream for typing effect |
+| `/api/render` | POST | Trigger Gemini render for a room |
+| `/api/render/[id]` | GET | Get render result |
+| `/api/export` | POST | Generate Collada/OBJ download URL |
+| `/api/import` | POST | Re-upload and parse .dae/.obj |
+| `/api/upload` | POST | Upload file to R2 (signed URL) |
+| `/api/furniture/templates` | GET | List furniture templates |
+| `/api/furniture/apply` | POST | Apply furniture template to project |
+
+---
+
+## 5. Component Tree
 
 ```
-src/
-├── app/                          # Next.js App Router pages
-│   ├── page.tsx                  # Landing page
-│   ├── browse/                   # Flat type browsing
-│   │   ├── page.tsx
-│   │   └── [templateId]/
-│   │       └── page.tsx
-│   ├── studio/
-│   │   └── [projectId]/
-│   │       └── page.tsx          # Main 3D studio page
-│   ├── admin/                    # Admin panel (protected)
-│   │   ├── login/page.tsx
-│   │   ├── dashboard/page.tsx
-│   │   ├── templates/
-│   │   │   ├── new/page.tsx
-│   │   │   └── [id]/edit/page.tsx
-│   │   └── layout.tsx
-│   └── api/                      # API routes
-│       ├── auth/                 # NextAuth
-│       ├── templates/route.ts
-│       ├── projects/route.ts
-│       ├── render/route.ts       # Gemini proxy
-│       └── upload/route.ts       # R2 signed upload
+app/
+├── (public)/
+│   ├── page.tsx                     # Landing page
+│   ├── browse/page.tsx              # BTO project browser
+│   ├── browse/[slug]/page.tsx       # BTO + flat model selector
+│   └── share/[id]/page.tsx          # Public render gallery
 │
-├── components/                   # React components
-│   ├── ui/                       # shadcn/ui components
-│   ├── viewport/                 # 3D viewport components
-│   │   ├── Scene.tsx             # R3F Canvas setup
-│   │   ├── Building.tsx          # Main 3D model mesh
-│   │   ├── Room.tsx              # Individual room mesh
-│   │   ├── Doors.tsx             # Door geometries
-│   │   ├── Windows.tsx           # Window geometries
-│   │   ├── Flooring.tsx          # Floor material per room
-│   │   ├── Controls.tsx          # Orbit, pan, zoom
-│   │   └── Walkthrough.tsx       # First-person mode
-│   ├── annotation/               # Floor plan annotation
-│   │   ├── Canvas.tsx            # react-konva canvas
-│   │   ├── WallTool.tsx          # Wall drawing tool
-│   │   ├── RoomLabeler.tsx       # Room type selector
-│   │   └── DimensionInput.tsx    # Room size input
-│   ├── styles/                   # Style engine
-│   │   ├── PresetSelector.tsx    # Style preset cards
-│   │   ├── PromptInput.tsx       # AI style text input
-│   │   ├── MaterialPreview.tsx   # Before/after comparison
-│   │   └── ColorPicker.tsx       # Manual colour override
-│   ├── export/                   # Export/import
-│   │   ├── ExportButton.tsx      # Collada download
-│   │   ├── ImportButton.tsx      # Re-upload handler
-│   │   └── FormatSelect.tsx      # Format picker
-│   ├── renders/                  # Render gallery
-│   │   ├── RenderCard.tsx        # Single render thumbnail
-│   │   ├── RenderGallery.tsx     # Grid of room renders
-│   │   └── RenderButton.tsx      # Trigger Gemini render
-│   └── admin/                    # Admin panel components
-│       ├── TemplateList.tsx
-│       ├── TemplateForm.tsx
-│       └── RoomEditor.tsx
+├── (auth)/
+│   └── login/page.tsx               # Google OAuth login
 │
-├── lib/                          # Utilities
-│   ├── mesh/                     # 3D mesh generation
-│   │   ├── generateWalls.ts      # Wall→BufferGeometry
-│   │   ├── generateFloor.ts      # Floor slab
-│   │   ├── generateCeiling.ts    # Ceiling slab
-│   │   ├── generateDoors.ts      # Door openings
-│   │   └── generateWindows.ts    # Window openings
-│   ├── materials/                # Material definitions
-│   │   ├── palettes.ts           # Style palette data
-│   │   ├── presets.ts            # Preset style configs
-│   │   └── textures.ts           # Texture URL mappings
-│   ├── export/                   # File operations
-│   │   ├── exportCollada.ts      # Three.js → Collada
-│   │   ├── exportOBJ.ts          # Three.js → OBJ
-│   │   └── importModel.ts        # Uploaded file → Three.js
-│   ├── ai/                       # AI integration
-│   │   ├── gemini.ts             # Gemini API client
-│   │   ├── stylePrompt.ts        # Prompt → style params
-│   │   └── renderRoom.ts         # Room view → render
-│   ├── r2.ts                     # Cloudflare R2 helpers
-│   └── utils.ts                  # Shared utilities
+├── (dashboard)/
+│   ├── layout.tsx                   # Auth-protected layout
+│   ├── page.tsx                     # User's project list
+│   └── project/
+│       └── [id]/
+│           ├── page.tsx             # Main studio page (viewport + chat + gallery)
+│           └── export/page.tsx      # Export/import page
 │
-├── hooks/                        # Custom hooks
-│   ├── useMeshGeneration.ts      # Generate 3D from room data
-│   ├── useStyleApplication.ts    # Apply style to materials
-│   ├── useExport.ts              # Export lifecycle
-│   └── useGeminiRender.ts        # Render lifecycle
-│
-├── store/                        # Zustand stores
-│   ├── projectStore.ts           # Current project state
-│   ├── styleStore.ts             # Active style config
-│   └── viewportStore.ts          # Camera/view settings
-│
-├── prisma/                       # Prisma schema
-│   └── schema.prisma
-│
-└── types/                        # TypeScript types
-    ├── template.ts               # Template & RoomConfig types
-    ├── project.ts                # Project types
-    ├── render.ts                 # Render types
-    ├── material.ts               # Material & style types
-    └── geometry.ts               # 3D geometry types
-```
+├── admin/
+│   ├── login/page.tsx               # Admin login
+│   ├── layout.tsx                   # Protected admin layout
+│   ├── page.tsx                     # Dashboard
+│   ├── bto/
+│   │   ├── page.tsx                 # BTO project list
+│   │   ├── new/page.tsx             # New BTO project form
+│   │   └── [id]/
+│   │       ├── edit/page.tsx         # Edit BTO project details
+│   │       └── models/
+│   │           ├── new/page.tsx      # New flat model
+│   │           └── [modelId]/
+│   │               └── annotate/page.tsx  # Room annotation canvas
+│   └── furniture/
+│       └── page.tsx                 # Furniture template manager
 
-### 2.2 Mesh Generation Pipeline (Client-Side)
-
-The heart of the app: converting room annotation polygons into a 3D mesh.
-
-```
-RoomConfig.vertices (2D polygon)
-         │
-         ▼
-  Extrude to 3D (wallHeight = 2.8m)
-         │
-    ┌────┴────┐
-    ▼         ▼
- Wall Mesh  Floor Mesh
- (sides)    (planar)
-    │         │
-    └────┬────┘
-         ▼
-  Add Door Openings
-  (subtract boxes from wall mesh)
-         │
-         ▼
-  Add Window Openings
-  (subtract boxes from wall mesh)
-         │
-         ▼
-  Apply Materials per RoomConfig
-  (wallColor, floorType, floorColor)
-         │
-         ▼
-  Merge into Single Unit Mesh
-  (merge geometries, deduplicate vertices)
-         │
-         ▼
-  3D Model ready for R3F display
-```
-
-This is done entirely with Three.js `BufferGeometry` operations:
-- `ExtrudeGeometry` for walls from polygons
-- `ShapeGeometry` for floors and ceilings
-- `CSG` (Constructive Solid Geometry) via Three.js CSG for door/window cutouts
-- `mergeGeometries` for combining room meshes
-
----
-
-## 3. Data Flow Diagrams
-
-### 3.1 Admin: Creating a Template
-
-```
-Admin                     Next.js API              R2              Postgres
-  │                          │                    │                  │
-  │  [Upload floor plan]     │                    │                  │
-  │ ─────────────────────►   │                    │                  │
-  │                          │  [Store image]     │                  │
-  │                          │ ──────────────────► │                  │
-  │                          │ ◄────────────────── │ (signed URL)    │
-  │                          │                    │                  │
-  │ ←── image preview ───────│                    │                  │
-  │                          │                    │                  │
-  │  [Draw rooms on canvas]  │                    │                  │
-  │  [Label rooms]           │                    │                  │
-  │  [Set dimensions]        │                    │                  │
-  │                          │                    │                  │
-  │  [Save Template]         │                    │                  │
-  │ ─────────────────────►   │                    │                  │
-  │                          │  [INSERT template]  │                  │
-  │                          │ ──────────────────────────────────►   │
-  │                          │ ◄──────────────────────────────────   │
-  │ ←── template created ────│                    │                  │
-```
-
-### 3.2 User: Full Pipeline
-
-```
-User                    Next.js App              R3F/Three.js      Gemini API
-  │                         │                        │                 │
-  │  [Select flat type]     │                        │                 │
-  │ ───────────────────►    │                        │                 │
-  │  ←── template data ─────│                        │                 │
-  │                         │                        │                 │
-  │  [View 3D Model]        │   ──── mesh gen ───►  │                 │
-  │                         │   ◄── model ready ──── │                 │
-  │                         │                        │                 │
-  │  [Pick Style]           │                        │                 │
-  │  ───────────────────►   │   ── swap materials ──►│                 │
-  │  ←── style applied ─────│   ◄── updated ──────── │                 │
-  │                         │                        │                 │
-  │  [Export to SketchUp]   │                        │                 │
-  │                         │   ── Collada exp ────► │                 │
-  │  ←── .dae download ─────│                        │                 │
-  │                         │                        │                 │
-  │  [Edit in SketchUp]     │                        │                 │
-  │                         │                        │                 │
-  │  [Re-import .dae]       │                        │                 │
-  │  ───────────────────►   │   ── Collada imp ────► │                 │
-  │  ←── merged model ──────│   ◄── parsed ──────── │                 │
-  │                         │                        │                 │
-  │  [Generate Render]      │                        │                 │
-  │  ───────────────────►   │                        │                 │
-  │                         │  ── screenshot ──────► │                 │
-  │                         │  ◄── base image ────── │                 │
-  │                         │                        │                 │
-  │                         │  ── render req ──────────────────────►  │
-  │                         │  ◄── rendered img ─────────────────────│
-  │  ←── render ready ──────│                        │                 │
+components/
+├── ui/                              # shadcn/ui components
+├── layout/
+│   ├── Header.tsx
+│   ├── Sidebar.tsx
+│   └── BottomNav.tsx               # Mobile
+├── auth/
+│   ├── LoginButton.tsx
+│   ├── UserMenu.tsx
+│   └── AuthGuard.tsx
+├── discovery/                       # BTO project discovery
+│   ├── BTOSearch.tsx
+│   ├── BTOProjectCard.tsx
+│   ├── FlatModelSelector.tsx
+│   └── FloorPlanPreview.tsx
+├── viewport/                        # 3D viewport
+│   ├── Studio.tsx                   # Main studio layout (viewport + panels)
+│   ├── Scene.tsx                    # R3F Canvas
+│   ├── Building.tsx                 # Flat 3D model
+│   ├── Room.tsx                     # Single room mesh
+│   ├── Doors.tsx                    # Door geometries
+│   ├── Windows.tsx                  # Window geometries
+│   ├── Flooring.tsx                 # Per-room floor material
+│   ├── Furniture.tsx                # Placed furniture objects
+│   ├── RoomLabels.tsx               # 3D room name labels
+│   ├── Controls.tsx                 # Orbit, walkthrough
+│   └── CameraPresets.tsx            # Per-room camera positions
+├── consultant/                      # AI design consultant
+│   ├── ChatPanel.tsx                # Chat interface
+│   ├── ChatMessage.tsx              # Single message bubble
+│   ├── ChatInput.tsx                # Text input + send
+│   ├── StylePreview.tsx             # Real-time material preview
+│   ├── DesignSummary.tsx            # Current brief summary
+│   └── RoomTabBar.tsx               # Switch between rooms in chat
+├── furniture/                       # Furniture system
+│   ├── FurnitureSelector.tsx        # Template picker
+│   ├── FurnitureTemplateCard.tsx
+│   ├── FurnitureItemList.tsx        # Items in selected template
+│   └── PlacementToggle.tsx          # Accept/reject individual items
+├── export/
+│   ├── ExportPanel.tsx
+│   ├── ExportButton.tsx
+│   ├── ImportDropzone.tsx
+│   └── FormatSelector.tsx
+├── renders/                         # AI render gallery
+│   ├── RenderGallery.tsx
+│   ├── RenderCard.tsx
+│   ├── RenderButton.tsx
+│   ├── RenderLightbox.tsx
+│   ├── BeforeAfterSlider.tsx
+│   └── RoomRenderSelector.tsx       # Which room to render
+└── admin/                           # Admin components
+    ├── BTOProjectForm.tsx
+    ├── FlatModelForm.tsx
+    ├── RoomAnnotationCanvas.tsx
+    ├── RoomPropertyPanel.tsx
+    ├── FurnitureTemplateForm.tsx
+    └── AdminDashboard.tsx
 ```
 
 ---
 
-## 4. Tech Stack Deep Dive
+## 6. Data Flows
 
-### 4.1 Frontend
-
-| Library | Version | Purpose |
-|---------|---------|---------|
-| Next.js | 16 | App Router, API routes, server components |
-| React | 19 | UI framework |
-| TypeScript | 5.x | Type safety |
-| Three.js | r160+ | 3D rendering engine |
-| @react-three/fiber | 9.x | React renderer for Three.js |
-| @react-three/drei | 10.x | R3F utilities (OrbitControls, etc.) |
-| @react-three/postprocessing | 3.x | Bloom, ambient occlusion post-processing |
-| three-mesh-bvh | Latest | BVH acceleration for raycasting |
-| zustand | 5.x | State management |
-| react-konva | 19.x | 2D canvas for floor plan annotation |
-| shadcn/ui | Latest | UI components (button, card, dialog, etc.) |
-| Tailwind CSS | 4.x | Utility-first CSS |
-| next-auth | 5.x | Authentication |
-| @prisma/client | 6.x | Database ORM |
-| @google-cloud/aiplatform | Latest | Gemini API client (or direct fetch) |
-
-### 4.2 Database (PostgreSQL via Neon)
-
-| Table | Purpose | Key Columns |
-|-------|---------|-------------|
-| `User` | Accounts & auth | id, email, role |
-| `Template` | HDB layout definitions | id, name, flatType, imageUrl, scale |
-| `RoomConfig` | Room within a template | id, templateId, label, roomType, vertices, floorHeight, wallColor, floorType, floorColor |
-| `Project` | User project | id, userId, templateId, stylePrompt, stylePreset |
-| `Render` | Generated renders | id, projectId, room, imageUrl, prompt, resolution |
-| `StylePreset` | Predefined styles | id, name, description, palette, promptHint |
-| `Session` | NextAuth sessions | id, sessionToken, userId, expires |
-
-### 4.3 File Storage (Cloudflare R2)
-
-| Bucket | Contents | Access Pattern |
-|--------|----------|----------------|
-| `floor-plans` | Uploaded HDB floor plan images | Signed URLs (admin upload, user view) |
-| `models` | Exported 3D models (.dae, .obj) | Direct download (short-lived) |
-| `renders` | Gemini-generated interior images | Signed URLs (user gallery) |
-| `textures` | Material textures (tile, wood, etc.) | Public CDN |
-
-### 4.4 AI Services (Google Gemini)
-
-| API | Model | Use Case | Cost Model |
-|-----|-------|----------|------------|
-| **Imagen** | `imagen-3.0-generate-001` | Photorealistic interior renders from base image + prompt | Per-image pricing |
-| **Gemini** | `gemini-2.5-pro` | Parse natural language style prompt → structured parameters | Per-token (cheap) |
-
-**Gemini Render Flow:**
+### 6.1 AI Consultant Chat
 
 ```
-1. Capture viewport screenshot (user's current 3D view) → base image (PNG)
-2. Combine with style prompt: "Make this living room Scandinavian with oak flooring, white walls, and a navy accent wall"
-3. Send to Gemini Imagen API: imagen-3.0-generate-001(base_image, prompt, aspect_ratio)
-4. Return generated image → store in R2 → display in gallery
+Client                    Next.js API               Gemini API            DB
+  │                          │                         │                   │
+  │  POST /api/ai/consult    │                         │                   │
+  │  { msg, projectId }      │                         │                   │
+  │ ──────────────────────►  │                         │                   │
+  │                          │  [Load chatHistory +    │                   │
+  │                          │   currentBrief from DB] │                   │
+  │                          │ ─────────────────────────────────────────►  │
+  │                          │ ◄─────────────────────────────────────────  │
+  │                          │                         │                   │
+  │                          │  POST Gemini 2.5 Pro    │                   │
+  │                          │  System + History + Msg │                   │
+  │                          │ ──────────────────────► │                   │
+  │                          │  ◄── response + brief ──│                   │
+  │                          │                         │                   │
+  │                          │  [Save chat + brief]    │                   │
+  │                          │ ─────────────────────────────────────────►  │
+  │                          │                         │                   │
+  │ ◄── SSE stream: ────────│                         │                   │
+  │  { msg: "Light oak...",  │                         │                   │
+  │    brief: { rooms:... }, │                         │                   │
+  │    diff: { floor } }     │                         │                   │
+  │                          │                         │                   │
+  │  [Apply diff to 3D]      │                         │                   │
 ```
 
-The Gemini API supports **image conditioning** (img2img), which means it uses the 3D model's geometry and lighting as a base and re-styles it, rather than generating from scratch. This is ideal for interior design — the room layout stays accurate while materials, furniture, and lighting change.
-
----
-
-## 5. Performance Considerations
-
-### 5.1 3D Model Optimization
-
-| Strategy | Implementation |
-|----------|---------------|
-| **Geometry merging** | All rooms merged into single `BufferGeometry` after generation |
-| **Instanced meshes** | Repeated objects (light switches, outlets) use InstancedMesh |
-| **LOD** | Lower polygon count when camera is far |
-| **Draco compression** | glTF export with Draco for fast loading (if needed) |
-| **Texture atlas** | All room textures packed into single atlas |
-
-### 5.2 Render Pipeline Optimization
-
-| Strategy | Implementation |
-|----------|---------------|
-| **Thumbnail capture** | Render to offscreen canvas (not user's screen) |
-| **Web Workers** | Export/import operations off main thread |
-| **Lazy loading** | Only load visible rooms' textures |
-| **Progressive rendering** | Show low-res placeholder while Gemini generates |
-
----
-
-## 6. Security Architecture
+### 6.2 Render Generation
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                   Security Layers                        │
-│                                                         │
-│  1. API Key Protection                                  │
-│     - Gemini API key → Vercel env vars only             │
-│     - R2 access keys → Vercel env vars only             │
-│     - No keys exposed to client JavaScript              │
-│                                                         │
-│  2. Authentication (NextAuth)                           │
-│     - Admin routes: require session + admin role        │
-│     - User routes: optional auth for MVP                │
-│     - Session tokens: HTTP-only cookies                 │
-│                                                         │
-│  3. File Upload Security                                │
-│     - R2 signed URLs: time-limited (15 min)             │
-│     - File type validation: PNG, JPG, PDF, DAE, OBJ     │
-│     - File size limit: 50 MB per upload                 │
-│                                                         │
-│  4. API Rate Limiting                                   │
-│     - Render endpoint: 10 req/min per session           │
-│     - Upload endpoint: 5 req/min per session            │
-│     - Auth endpoint: 3 req/min per IP                   │
-│                                                         │
-│  5. CORS & CSP                                          │
-│     - Strict CSP headers                                │
-│     - CORS: allow own domain only                       │
-└────────────────────────────────────────────────────────┘
+Client                    Next.js API               R2             Gemini Imagen
+  │                          │                       │                   │
+  │  POST /api/render        │                       │                   │
+  │  { projectId, room }     │                       │                   │
+  │ ──────────────────────►  │                       │                   │
+  │                          │  [Capture viewport]   │                   │
+  │                          │  ── render to PNG ──► │  (offscreen)      │
+  │                          │                       │                   │
+  │                          │  [Construct prompt]   │                   │
+  │                          │  DesignBrief.rooms[r] │                   │
+  │                          │  + Furniture in room  │                   │
+  │                          │                       │                   │
+  │                          │  POST imagen-3.0      │                   │
+  │                          │  { image, prompt }    │                   │
+  │                          │ ───────────────────────────────────────►  │
+  │                          │                       │                   │
+  │                          │  [Save to R2]         │                   │
+  │                          │  ◄── output image ────│────────────────────│
+  │                          │ ────────────────────► │                   │
+  │                          │                       │                   │
+  │                          │  [Save render record] │                   │
+  │  ←── renderUrl + id ─────│                       │                   │
 ```
 
 ---
 
-## 7. Deployment Architecture
+## 7. AI System Prompts
+
+### 7.1 Design Consultant (Gemini 2.5 Pro)
 
 ```
-┌────────────────────────────────────────────────────┐
-│                   Vercel                             │
-│                                                      │
-│  ┌────────────┐   ┌──────────────────────────────┐  │
-│  │  Edge       │   │  Serverless Functions         │  │
-│  │  (Static)  │   │  - /api/* routes              │  │
-│  │  - Landing  │   │  - NextAuth handlers          │  │
-│  │  - Static   │   │  - Render proxy               │  │
-│  │    assets   │   │  - Upload handlers            │  │
-│  └────────────┘   └──────────────────────────────┘  │
-│                                                      │
-│  Client Components (dynamic):                        │
-│  - /studio/[id]        (3D viewport)                │
-│  - /admin/*            (dashboard + editor)         │
-│  - /browse             (template browser)            │
-│                                                      │
-│  Server Components (SSR/SSG):                        │
-│  - /                   (landing page)               │
-│  - /browse/[id]        (template detail)            │
-└────────────────────────────────────────────────────┘
-         │
-         │ Environment Variables (Vercel)
-         ├── GEMINI_API_KEY
-         ├── R2_ACCESS_KEY_ID
-         ├── R2_SECRET_ACCESS_KEY
-         ├── R2_BUCKET_NAME
-         ├── DATABASE_URL (Neon)
-         └── NEXTAUTH_SECRET
+You are an AI interior design consultant for Singapore HDB flats.
+You help users design their home room-by-room through friendly conversation.
+
+RULES:
+1. Start broad: ask about their overall desired vibe/style
+2. Never ask more than 1-2 questions at once
+3. Offer specific choices ("light oak or dark walnut flooring?") — never "what floor do you want?"
+4. After every 2-3 exchanges, briefly summarize what you've noted
+5. Track per-room preferences independently
+6. Use Singapore-appropriate materials: vinyl, laminate, homogeneous tiles, solid surface, quartz
+7. Reference real HDB constraints: "Most HDB living rooms are ~4m×5m, so a 2.5m sofa fits well"
+8. When user says "I'm happy" or "looks good", present the full design brief for confirmation
+
+OUTPUT FORMAT (respond in JSON):
+{
+  "message": "Your conversational response here...",
+  "brief": { /* full updated DesignBrief JSON */ },
+  "briefDiff": { /* only changed fields from previous brief */ }
+}
 ```
 
-### 7.1 CI/CD Pipeline
+### 7.2 Render Prompts (Gemini Imagen)
 
 ```
-Git Push (main)
-    │
-    ▼
-GitHub Action: Lint + Type Check
-    │
-    ▼
-Vercel: Preview Deployment (staging)
-    │
-    ▼
-Vercel: Production Deployment (main branch)
-    │
-    ▼
-Cloudflare R2: Textures + Static assets via CDN
+For each room, construct a prompt like:
+
+"Photorealistic interior render of a {roomLabel} in a Singapore HDB flat.
+Style: {style}.
+{description}
+Floor: {floorType}, {floorColor}.
+Walls: {wallColor}, {wallFinish} finish.
+Accent color: {accentColor}.
+Furniture: {furnitureStyle} style with {furniture description from template}.
+Lighting: {lighting} tone.
+Natural light from window on {window wall}.
+Camera: eye level, wide angle lens. Professional photography lighting.
+High resolution, realistic textures, depth of field."
 ```
 
 ---
 
-## 8. Failure Modes & Mitigations
+## 8. Furniture Template System Detail
 
-| Failure Mode | Impact | Mitigation |
-|-------------|--------|------------|
-| Gemini API down | Renders fail | Cache recent renders; show error with retry button |
-| R2 unavailable | Uploads/downloads fail | Retry with exponential backoff; show user-friendly error |
-| Neon DB slow | Template loading delayed | Prisma connection pooling; query caching with React Query |
-| Browser lacks WebGL | 3D viewport blank | Detect WebGL on load; show fallback 2D floor plan view |
-| Collada re-import fails | User loses SketchUp edits | Store original .dae in R2; support re-upload |
-| Large floor plan image | Annotation canvas lags | Downscale to 2048px max dimension on upload |
+### Template Design
+
+Furniture templates are pre-designed room layouts that the AI matches to the user's room + style.
+
+```
+Template Matching Logic:
+  1. Filter by roomType === current room's roomType
+  2. Filter by styleTag === current room's style (or null for universal)
+  3. Score by: dimension fit (room area vs template total footprint)
+  4. Pick highest-scoring template
+  5. Scale furniture positions proportionally to room dimensions
+  6. Anchor furniture to walls:
+     - sofa: back to wall, 10cm gap
+     - bed: headboard to wall, 50cm side clearance
+     - dining: center of room, 90cm from walls for chairs
+
+Fallback: If no matching template, show empty room with note "No
+furniture template available for this style yet"
+```
+
+### Initial Template Scope (MVP)
+
+| Room Type | Style | Items |
+|-----------|-------|-------|
+| Living - Scandi | Scandinavian | Sofa, coffee table, rug, floor lamp, TV console, plant |
+| Living - Japandi | Japandi | Low sofa, wooden coffee table, tatami rug, floor lamp, screen |
+| Living - Industrial | Industrial | Leather sofa, metal coffee table, industrial lamp, shelf |
+| MBR - Scandi | Scandinavian | Bed, nightstand ×2, wardrobe, rug, floor lamp |
+| MBR - Japandi | Japandi | Low bed platform, nightstand, sliding wardrobe, paper lamp |
+| Dining | Universal | Dining table, chairs ×4, pendant light |
+| Kitchen | Universal | Kitchen island (if space), stool ×2 |
 
 ---
 
-## 9. Glossary
+## 9. Performance
 
-| Term | Definition |
-|------|-----------|
-| **BTO** | Build-To-Order, HDB's flat allocation scheme |
-| **Collada (.dae)** | XML-based 3D interchange format; native SketchUp Pro import |
-| **Imagen** | Google's text-to-image AI model (via Gemini API) |
-| **PBR** | Physically Based Rendering — material system that responds to lighting realistically |
-| **R3F** | React Three Fiber — React renderer for Three.js |
-| **BufferGeometry** | Three.js class for storing vertex data (positions, normals, UVs) |
-| **CSG** | Constructive Solid Geometry — boolean operations on meshes (union, subtract, intersect) |
-| **Signed URL** | Time-limited access URL for private R2 objects |
-| **ExtrudeGeometry** | Three.js operation that turns a 2D shape into a 3D volume |
+| Area | Target | Strategy |
+|------|--------|----------|
+| 3D model load | < 2s | Pre-merged geometry; glTF with Draco; lazy texture load |
+| Chat response | < 3s | Gemini streaming; first token in < 500ms |
+| Material swap | < 500ms | Only update material references; no re-mesh |
+| Render generation | < 10s/room | Parallel room renders; progress callbacks |
+| Collada export | < 3s | Web Worker off main thread |
+| Initial bundle | < 200KB JS | Dynamic import R3F; code-split by route |
+
+---
+
+## 10. Security
+
+1. **API keys**: Vercel environment variables only (Gemini, R2)
+2. **OAuth**: NextAuth with Google provider; HTTPS-only cookies
+3. **Admin routes**: Session-based role guard (`role: "admin"`)
+4. **File uploads**: R2 signed URLs with 15-minute expiry
+5. **Rate limits**: Render: 10/min/session; Chat: 30/min/session; Upload: 5/min/session
+6. **CSP**: Strict Content Security Policy headers
+
+---
+
+## 11. Failure Modes
+
+| Mode | Impact | Mitigation |
+|------|--------|------------|
+| Gemini API down | Consultant + renders fail | Show "Service unavailable, try again later"; cache last brief |
+| Gemini returns bad JSON | Consultant breaks | Retry with "Please format as valid JSON"; fallback to text-only mode |
+| WebGL not supported | 3D viewport blank | Detect on load; show 2D floor plan view as fallback |
+| SketchUp export fails | File corrupt | Retry with OBJ format; show user-friendly error |
+| Furniture template doesn't fit room | Objects clip through walls | Auto-scale to 90% of room size; add margin check |
