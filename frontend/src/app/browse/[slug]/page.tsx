@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Header } from '@/components/layout/Header';
-import { ArrowLeft, Edit3, Sparkles, ChevronRight, Home, Ruler } from 'lucide-react';
+import { ArrowLeft, Sparkles, Edit3, ChevronRight, Home, Ruler, Check } from 'lucide-react';
 
 const MOCK_MODELS = [
   {
@@ -53,96 +55,122 @@ export default function FlatModelSelectorPage() {
   const model = MOCK_MODELS.find((m) => m.id === selectedModel) || MOCK_MODELS[0];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 pb-20 md:pb-0">
       <Header />
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Back Link */}
         <Link
           href="/browse"
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to projects
         </Link>
 
         {/* Project Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold">{project.name}</h1>
-          <p className="text-sm text-slate-500">
-            {project.location} · {project.year}
-          </p>
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              {project.location} &middot; {project.year}
+            </p>
+          </div>
+          <Badge variant="secondary" className="text-xs">
+            {project.location}
+          </Badge>
         </div>
 
         {/* Floor Plan Preview */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden mb-8">
-          <div className="aspect-[16/10] bg-slate-100 relative flex items-center justify-center">
-            {/* Placeholder floor plan */}
-            <div className="text-center">
-              <div className="text-6xl mb-4">🏗️</div>
-              <p className="text-sm text-slate-400 mb-2">Floor Plan Preview</p>
-              <div className="flex flex-wrap gap-3 justify-center max-w-sm mx-auto">
+        <Card className="mb-8 overflow-hidden">
+          <div className="aspect-[16/9] sm:aspect-[16/10] bg-gradient-to-br from-slate-50 to-slate-100 relative flex items-center justify-center">
+            <div className="text-center p-8">
+              <div className="w-16 h-16 bg-teal-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Home className="w-8 h-8 text-teal-600" />
+              </div>
+              <p className="text-sm font-medium text-slate-500 mb-4">Floor Plan Preview</p>
+              <div className="flex flex-wrap gap-2 justify-center max-w-sm mx-auto">
                 {model.rooms.slice(0, 4).map((room) => (
-                  <span
-                    key={room}
-                    className="bg-white/80 text-xs px-3 py-1.5 rounded-full border border-slate-200 text-slate-600"
-                  >
+                  <Badge key={room} variant="outline" className="bg-white/90 text-xs">
                     {room}
-                  </span>
+                  </Badge>
                 ))}
                 {model.rooms.length > 4 && (
-                  <span className="text-xs text-slate-400 self-center">
+                  <Badge variant="secondary" className="text-xs">
                     +{model.rooms.length - 4} more
-                  </span>
+                  </Badge>
                 )}
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Available Models */}
         <h2 className="font-semibold mb-4 text-lg">Available Models</h2>
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          {MOCK_MODELS.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setSelectedModel(m.id)}
-              className={`text-left bg-white rounded-xl border p-5 transition ${
-                selectedModel === m.id
-                  ? 'border-teal-500 ring-2 ring-teal-200 shadow-md'
-                  : 'border-slate-200 hover:border-teal-300 hover:shadow-sm'
-              }`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-sm">{m.name}</h3>
-                  <p className="text-xs text-slate-500">{m.flatType}</p>
-                </div>
-                {selectedModel === m.id && (
-                  <span className="bg-teal-100 text-teal-700 text-xs px-2 py-0.5 rounded font-medium">
-                    Selected
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-4 text-xs text-slate-500">
-                <span className="flex items-center gap-1">
-                  <Ruler className="w-3 h-3" />
-                  {m.totalArea} sqm
-                </span>
-                <span className="flex items-center gap-1">
-                  <Home className="w-3 h-3" />
-                  {m.bedrooms} beds
-                </span>
-              </div>
-            </button>
-          ))}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {MOCK_MODELS.map((m) => {
+            const isSelected = selectedModel === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => setSelectedModel(m.id)}
+                className="text-left w-full"
+              >
+                <Card
+                  className={`relative transition-all duration-200 ${
+                    isSelected
+                      ? 'border-teal-500 ring-2 ring-teal-200 shadow-lg'
+                      : 'border-slate-200 hover:border-teal-300 hover:shadow-md'
+                  }`}
+                >
+                  <CardContent className="p-5">
+                    {isSelected && (
+                      <div className="absolute top-3 right-3 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
+                        <Check className="w-3.5 h-3.5 text-white" />
+                      </div>
+                    )}
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold">{m.name}</h3>
+                        <Badge variant={isSelected ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">
+                          {m.flatType}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-slate-500 mb-4">
+                      <span className="flex items-center gap-1">
+                        <Ruler className="w-3 h-3" />
+                        {m.totalArea} sqm
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Home className="w-3 h-3" />
+                        {m.bedrooms} beds
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {m.rooms.slice(0, 3).map((room) => (
+                        <Badge key={room} variant="outline" className="text-[10px] px-1.5 py-0 bg-slate-50">
+                          {room}
+                        </Badge>
+                      ))}
+                      {m.rooms.length > 3 && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          +{m.rooms.length - 3}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </button>
+            );
+          })}
         </div>
 
         {/* CTAs */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Button
             size="lg"
-            className="bg-teal-600 hover:bg-teal-700 text-white"
+            className="bg-teal-600 hover:bg-teal-700 text-white shadow-md hover:shadow-lg transition-all"
             onClick={() => router.push(`/studio/new?modelId=${selectedModel}&useDefault=true`)}
           >
             <Sparkles className="w-4 h-4 mr-2" />

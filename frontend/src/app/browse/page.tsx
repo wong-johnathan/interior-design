@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/layout/Header';
-import { Search, MapPin, Calendar, ChevronRight, AlertCircle } from 'lucide-react';
+import { Search, MapPin, Calendar, AlertCircle, Layers } from 'lucide-react';
 
 const MOCK_PROJECTS = [
   {
@@ -69,37 +71,31 @@ export default function BrowsePage() {
   const locations = [...new Set(MOCK_PROJECTS.map((p) => p.location))];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 pb-20 md:pb-0">
       <Header />
 
-      <div className="max-w-5xl mx-auto px-6 py-8">
-        {/* Breadcrumb */}
-        <div className="text-sm text-slate-400 mb-6">
-          <span className="text-teal-600 font-medium">BTO Projects</span>
-          <span className="mx-1">›</span>
-          <span className="text-slate-400">Select Model</span>
-          <span className="mx-1">›</span>
-          <span className="text-slate-300">Studio</span>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Find your BTO project</h1>
+          <p className="text-slate-500">
+            Select your project to see available floor plans and start designing.
+          </p>
         </div>
-
-        <h1 className="text-2xl font-bold mb-2">Find your BTO project</h1>
-        <p className="text-slate-500 mb-8">
-          Select your project to see available floor plans and start designing.
-        </p>
 
         {/* Search & Filters */}
         <div className="flex flex-wrap gap-3 mb-8">
-          <div className="relative flex-1 max-w-md min-w-[240px]">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+          <div className="relative flex-1 max-w-md min-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              placeholder="Search BTO project name or location..."
-              className="pl-9"
+              placeholder="Search BTO project or location..."
+              className="pl-9 h-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <select
-            className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
+            className="h-10 border border-input rounded-lg px-3 text-sm bg-background shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
             value={yearFilter}
             onChange={(e) => setYearFilter(e.target.value)}
           >
@@ -108,7 +104,7 @@ export default function BrowsePage() {
             <option value="2024">2024</option>
           </select>
           <select
-            className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"
+            className="h-10 border border-input rounded-lg px-3 text-sm bg-background shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
           >
@@ -129,64 +125,72 @@ export default function BrowsePage() {
             </p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-4">
-            {filtered.map((project) => (
-              <Link
-                key={project.id}
-                href={project.status === 'available' ? `/browse/${project.slug}` : '#'}
-                className={`bg-white rounded-xl border border-slate-200 p-5 transition ${
-                  project.status === 'available'
-                    ? 'hover:border-teal-400 hover:shadow-md cursor-pointer'
-                    : 'opacity-60 cursor-not-allowed'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-semibold text-lg">{project.name}</h3>
-                    <p className="text-sm text-slate-500 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {project.location}
-                      <span className="mx-1">·</span>
-                      <Calendar className="w-3 h-3" />
-                      {project.launchYear}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-1 rounded font-medium ${
-                      project.status === 'available'
-                        ? 'bg-teal-100 text-teal-700'
-                        : 'bg-amber-100 text-amber-700'
+          <div className="grid sm:grid-cols-2 gap-4">
+            {filtered.map((project) => {
+              const isAvailable = project.status === 'available';
+              return (
+                <Link
+                  key={project.id}
+                  href={isAvailable ? `/browse/${project.slug}` : '#'}
+                  className={!isAvailable ? 'pointer-events-none' : ''}
+                >
+                  <Card
+                    className={`transition-all duration-200 h-full ${
+                      isAvailable
+                        ? 'hover:border-teal-400 hover:shadow-lg cursor-pointer'
+                        : 'opacity-60'
                     }`}
                   >
-                    {project.status === 'available'
-                      ? `${project.modelCount} models`
-                      : 'Coming soon'}
-                  </span>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {project.types.map((type) => (
-                    <span
-                      key={type}
-                      className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded"
-                    >
-                      {type}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-xs text-slate-400 mt-3">{project.description}</p>
-              </Link>
-            ))}
+                    <CardContent className="p-5">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-lg">{project.name}</h3>
+                          <p className="text-sm text-slate-500 flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3" />
+                            {project.location}
+                            <span className="mx-1">&middot;</span>
+                            <Calendar className="w-3 h-3" />
+                            {project.launchYear}
+                          </p>
+                        </div>
+                        <Badge variant={isAvailable ? 'default' : 'secondary'} className="shrink-0">
+                          {isAvailable
+                            ? `${project.modelCount} models`
+                            : 'Coming soon'}
+                        </Badge>
+                      </div>
+                      <div className="flex gap-1.5 flex-wrap mb-3">
+                        {project.types.map((type) => (
+                          <Badge key={type} variant="outline" className="bg-slate-50 text-xs">
+                            {type}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-slate-400 flex items-center gap-1">
+                        <Layers className="w-3 h-3" />
+                        {project.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
 
-        {/* Empty state (shown when no projects exist at all) */}
+        {/* Empty state (when no projects seeded) */}
         {MOCK_PROJECTS.length === 0 && (
           <div className="text-center py-16">
-            <div className="text-5xl mb-4">🏗️</div>
+            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Layers className="w-8 h-8 text-slate-400" />
+            </div>
             <h2 className="text-lg font-semibold mb-2">Can&apos;t find your project?</h2>
             <p className="text-sm text-slate-500 mb-6">
               We&apos;re adding new BTOs regularly. Check back soon!
             </p>
+            <Button variant="outline" disabled>
+              Join Waitlist
+            </Button>
           </div>
         )}
       </div>
