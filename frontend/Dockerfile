@@ -23,7 +23,7 @@ RUN npm ci
 FROM deps AS development
 
 # Copy source code
-COPY tsconfig.json next.config.ts tailwind.config.ts components.json ./
+COPY tsconfig.json next.config.ts tailwind.config.ts components.json postcss.config.mjs ./
 COPY public ./public
 COPY src ./src
 
@@ -42,7 +42,7 @@ CMD ["npm", "run", "dev"]
 FROM deps AS builder
 
 # Copy config files
-COPY tsconfig.json next.config.ts tailwind.config.ts components.json ./
+COPY tsconfig.json next.config.ts tailwind.config.ts components.json postcss.config.mjs ./
 
 # Copy source
 COPY public ./public
