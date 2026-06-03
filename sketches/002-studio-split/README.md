@@ -1,5 +1,7 @@
 ## Variant: Split Panel Studio
 
+**Status**: ✅ Chosen direction (studio-bottom removed by user preference)
+
 ### Design stance
 Professional tool layout. Chat left, 3D center, brief right. Maximum information density.
 

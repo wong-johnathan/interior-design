@@ -1,5 +1,7 @@
 ## Variant: Split Layout Landing
 
+**Status**: ✅ Chosen direction (landing-centered removed by user preference)
+
 ### Design stance
 Light, airy, editorial. Teal + slate palette. Focus on value proposition before CTA.
 
