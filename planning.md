@@ -22,10 +22,10 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 | 1 | 2-3 | Admin panel + BTO template system |
 | 2 | 4-5 | 3D viewport + mesh generation |
 | 3 | 6-8 | AI design consultant (chat + brief) |
-| 4 | 9-10 | Furniture template system |
-| 5 | 11-12 | SketchUp export/import |
-| 6 | 13-14 | Photorealistic rendering (Gemini) |
-| 7 | 15-16 | User features + polish |
+| 4 | 9-11 | Furniture template system + Drag-to-place (LAVU-style) |
+| 5 | 12-13 | SketchUp export/import |
+| 6 | 14-15 | Photorealistic rendering (Gemini) |
+| 7 | 16-17 | User features + polish |
 
 ---
 
@@ -119,6 +119,17 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 | 4.7 | Furniture selector UI | `components/furniture/FurnitureSelector.tsx` | Shows matching templates |
 | 4.8 | Accept/reject per item | `components/furniture/PlacementToggle.tsx` | Toggle individual furniture pieces |
 | 4.9 | Seed templates: 6 room×style combinations | Data file | Templates available |
+| 4.10 | **DragControls integration** (LAVU-style) | `components/viewport/DragableFurniture.tsx` | Furniture items are pickable and draggable |
+| 4.11 | Ground plane raycast for drag | `lib/furniture/raycaster.ts` | Items stay on floor (Y=0) during drag |
+| 4.12 | Snap-to-grid system (25cm) | `lib/furniture/snapping.ts` | Furniture snaps on release |
+| 4.13 | Wall snap detection | `lib/furniture/wallSnap.ts` | Within 20cm → snaps to 15cm gap |
+| 4.14 | Collision detection (AABB) | `lib/furniture/collision.ts` | Red ghost when overlapping |
+| 4.15 | Ghost preview during drag | `components/viewport/DragGhost.tsx` | Transparent ghost follows cursor |
+| 4.16 | Context menu (swap, remove, rotate) | `components/furniture/ContextMenu.tsx` | Right-click → menu appears |
+| 4.17 | Furniture catalog panel | `components/furniture/CatalogPanel.tsx` | Search, filter, drag-into-room |
+| 4.18 | Swap item flow | `lib/furniture/swapper.ts` | Pick catalog item → replaces in place |
+| 4.19 | Undo/redo for furniture state | Zustand middleware + history stack | Ctrl+Z reverts last action |
+| 4.20 | Tweak mode toggle (Quick Apply vs. Tweak) | UI mode switch in viewport | Seamless switch between modes |
 
 **Seed templates (MVP):**
 
@@ -133,7 +144,7 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 
 ---
 
-### Phase 5 — SketchUp Export/Import (Week 11-12)
+### Phase 5 — SketchUp Export/Import (Week 12-13)
 
 | # | Task | Key Files | Verification |
 |---|------|-----------|-------------|
@@ -150,7 +161,7 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 
 ---
 
-### Phase 6 — Photorealistic Rendering (Week 13-14)
+### Phase 6 — Photorealistic Rendering (Week 14-15)
 
 | # | Task | Key Files | Verification |
 |---|------|-----------|-------------|
@@ -169,7 +180,7 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 
 ---
 
-### Phase 7 — User Features & Polish (Week 15-16)
+### Phase 7 — User Features & Polish (Week 16-17)
 
 | # | Task | Verification |
 |---|------|-------------|
@@ -206,10 +217,10 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 Week 1-3:    Admin can create BTO projects → You seed initial library
 Week 4-5:    3D model works → Internal demo
 Week 6-8:    AI consultant works → Dogfood with friends
-Week 9-10:   Furniture templates → Closer to real product
-Week 11-12:  SketchUp cycle → Power user workflow verified
-Week 13-14:  Renders work → First "wow" moment
-Week 15-16:  Polish → Beta launch
+Week 9-11:   Furniture templates + drag-to-place → Closer to real product
+Week 12-13:  SketchUp cycle → Power user workflow verified
+Week 14-15:  Renders work → First "wow" moment
+Week 16-17:  Polish → Beta launch
 ```
 
 ---
@@ -236,7 +247,7 @@ Week 15-16:  Polish → Beta launch
 - [ ] Google Cloud project with Gemini API enabled
 - [ ] Gemini API key (with Imagen access)
 - [ ] Google OAuth client ID (for NextAuth)
-- [ ] Sample HDB floor plans (4-room + 5-room)
+- [ ] Sample HDB floor plans from **2025+ BTO projects** (Verandah Kallang, Queenstown, etc.)
 - [ ] Sample 3D furniture models (GLB format)
 
 ---

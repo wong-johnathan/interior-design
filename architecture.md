@@ -150,46 +150,192 @@ interface FurnitureTemplatePlacement {
 }
 ```
 
-### 2.3 Furniture Template System (Option C — MVP)
+### 2.3 Furniture Template System with Drag-to-Place (LAVU-style)
+
+A hybrid approach: **AI picks the starting layout** (Option C templates), then the user can **drag, swap, rotate, and add furniture** freely — like LAVU's table management but in 3D.
 
 ```
-┌──────────────────────────────────────────────┐
-│  FurnitureTemplate                            │
-│  {                                            │
-│    id: "scandi-living-01",                   │
-│    name: "Scandinavian Living Room Set",      │
-│    category: "living",                        │
-│    styleTag: "scandinavian",                  │
-│    roomType: "living",                        │
-│    furniture: [                               │
-│      { type: "sofa", label: "3-Seater Sofa", │
-│        position: { x: 0, y: 0, z: 0 },       │
-│        rotation: { x: 0, y: 90, z: 0 },       │
-│        modelUrl: "r2://furniture/sofa.glb",  │
-│        dimensions: { w: 2.0, h: 0.8, d: 0.9  │
-│      },                                       │
-│      { type: "coffee_table", ... },           │
-│      { type: "rug", ... },                   │
-│      { type: "floor_lamp", ... },            │
-│      { type: "tv_console", ... }             │
-│    ]                                          │
-│  }                                            │
-└──────────────────────────────────────────────┘
-
-Placement Logic:
-1. Fetch template matching roomType + styleTag
-2. Scale furniture items relative to room dimensions
-3. Position using rule-based anchors:
-   - Sofa: against longest uninterrupted wall, facing TV wall
-   - Bed: centered on bedroom wall, 50cm from each side
-   - Dining table: center of dining area
-   - Kitchen: along counter edge
-4. User can accept, reject, or adjust individual pieces
+┌──────────────────────────────────────────────────────────────────────┐
+│  FURNITURE WORKFLOW                                                   │
+│                                                                       │
+│  Step 1: AI selects template                                         │
+│  ┌──────────────────────────────────────────────────────────┐        │
+│  │  "Japandi Living Room Set"                                │        │
+│  │  [Sofa] [Coffee Table] [Rug] [Floor Lamp] [TV Console]   │        │
+│  │                          [Apply] [Customize Instead ▼]    │        │
+│  └──────────────────────────────────────────────────────────┘        │
+│                                                                       │
+│  Step 2 (optional): Enter Tweak Mode                                  │
+│                                                                       │
+│  ┌──────────────────────────────────────────────────────────┐        │
+│  │  3D Viewport:                                              │        │
+│  │                                                           │        │
+│  │      ┌────────────┐        ┌──────┐                      │        │
+│  │      │   🛋️ Sofa   │〰️〰️〰️〰️│ 💡   │ ← Drag handle    │        │
+│  │      │  dragging…  │        │ Lamp │                      │        │
+│  │      └────────────┘        └──────┘                      │        │
+│  │           ↕                                                │        │
+│  │      Wall snap: [15cm from wall ✅]                       │        │
+│  │      Collision: [None ✅]                                 │        │
+│  └──────────────────────────────────────────────────────────┘        │
+│                                                                       │
+│  Step 3: Swap or Add from Catalog                                     │
+│  ┌──────────────────────────────────────────────┐                    │
+│  │  🛋️ Furniture Catalog    │ 🔍 Search...      │                    │
+│  │──────────────────────────────────────────────│                    │
+│  │  Sofas      │ 🛋️ 3-Seater  │ 🛋️ Sectional   │                    │
+│  │  Tables     │ 🛋️ Loveseat  │ 🛋️ Chaise      │ ← Drag into room  │
+│  │  Lighting   │──────────────┴─────────────────│                    │
+│  │  Decor      │  🛋️ Currently: "Japandi Sofa"  │                    │
+│  │  Storage    │  [Swap] [Remove]               │                    │
+│  └──────────────────────────────────────────────┘                    │
+│                                                                       │
+│  Step 4: Save Layout                                                  │
+│  [Undo] [Redo] [Reset to Template] [Save as New Template]             │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.4 Render Pipeline
+#### Template Schema
+
+```typescript
+interface FurnitureTemplate {
+  id: string;
+  name: string;                    // "Scandi Living Room Set"
+  category: "living" | "bedroom" | "dining" | "kitchen";
+  styleTag: string | null;         // "scandinavian" | "japandi" | null (universal)
+  roomType: string;                // "living" | "bedroom_master" | "bedroom"
+  furniture: FurnitureItem[];
+  thumbnailUrl: string;
+}
+
+interface FurnitureItem {
+  type: string;                    // "sofa", "bed", "table", "lamp"
+  label: string;                   // "3-Seater Sofa"
+  modelUrl: string;                // R2 GLB path
+  category: string;                // "seating", "tables", "lighting", "decor", "storage"
+
+  // Default position (template placement)
+  defaultPosition: Vec3;
+  defaultRotation: Vec3;
+  defaultScale: Vec3;
+
+  // Constraints
+  wallAnchor: "against" | "facing" | "center" | null;  // Preferred wall relationship
+  floorOnly: boolean;              // Must stay on floor (no floating)
+  minClearance: number;            // Minimum cm from walls/other furniture
+
+  // Visual
+  dimensions: Vec3;                // { w, h, d } in metres
+  snapPoints: SnapPoint[];         // Points to snap to grid/walls
+  ghostWhenDragging: boolean;      // Show transparent ghost at target position
+}
+```
+
+#### Initial Template Library (2025+ BTO projects)
+
+**Scope:** All HDB BTO projects from **2025 onwards**. Admin seeds the initial library with major 2024-2025 launches, then adds new projects as HDB announces BTO sales exercises.
+
+| BTO Project | Location | Flat Types | Est. Layouts |
+|-------------|----------|------------|--------------|
+| Verandah Kallang 2024 | Kallang | 4R, 5R | 2-3 |
+| Queenstown Project 2024 | Queenstown | 3R, 4R, 5R | 3-4 |
+| Plus all 2025 HDB BTO launches | Various | 2R Flexi → 5R | 10-15/year |
+
+**Strategy:** Admin configures each BTO project's floor plans as templates. Users select their BTO → see exactly their flat's layout. No generic "4-room" — it's "Verandah Kallang 2024 4-Room Model A".
+
+---
+
+### 2.4 Drag-to-Place Interaction System
+
+Inspired by LAVU's table management — furniture items become draggable 3D objects with smart snapping.
+
+#### Interaction Layer
 
 ```
+┌─────────────────────────────────────────────────────────┐
+│  DRAG-TO-PLACE ENGINE                                    │
+│                                                          │
+│  Input: Mouse/Pointer/Touch → Raycaster                  │
+│  ────────────────────────────────────────────────────────│
+│                                                          │
+│  ┌─────────────┐    ┌──────────────┐    ┌────────────┐  │
+│  │  Pick &     │    │  Snap        │    │  Collision │  │
+│  │  Drag       │───►│  System      │───►│  Detection │  │
+│  │             │    │              │    │            │  │
+│  │ Raycast to  │    │ Grid (25cm)  │    │ AABB check │  │
+│  │ groundplane │    │ Wall (15cm)  │    │ vs all     │  │
+│  │ Z-buffer    │    │ Furniture    │    │ other items│  │
+│  │ depth       │    │ (align edges)│    │            │  │
+│  └─────────────┘    └──────────────┘    └────────────┘  │
+│                           │                   │         │
+│                           ▼                   ▼         │
+│                    ┌──────────────┐    ┌────────────┐  │
+│                    │  Visual      │    │  Reject    │  │
+│                    │  Feedback    │    │  Position  │  │
+│                    │              │    │            │  │
+│                    │ Green ghost  │    │ Red tint + │  │
+│                    │ snap preview │    │ push-back  │  │
+│                    └──────────────┘    └────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Snap Rules
+
+| Rule | Implementation | Visual Feedback |
+|------|---------------|-----------------|
+| **Grid snap** | Round position to nearest 25cm on X/Z | Thin grid lines visible in tweak mode |
+| **Wall snap** | If within 20cm of a wall, snap to 15cm gap | Wall glows + ghost shows snapped position |
+| **Furniture-to-furniture** | Align edges of adjacent items (e.g. coffee table to sofa) | Matching edge highlights |
+| **Rotation snap** | 45° increments; hold Shift for free rotation | Rotate ring with tick marks |
+| **Floor constraint** | Y always = 0 (no floating furniture) | Ghost always projected to floor |
+
+#### Swap & Catalog Interaction
+
+```
+User taps/right-clicks furniture item
+        │
+        ▼
+┌────────────────────────────────────┐
+│  Context Menu                      │
+│  ───────────────────────────────── │
+│  🖱️ Drag to Move                   │
+│  🔄 Rotate                         │
+│  🔄 Swap Item...                   │
+│  ❌ Remove                         │
+│  📋 Copy to Clipboard              │
+└────────────────────────────────────┘
+        │
+        ▼  "Swap Item"
+┌────────────────────────────────────┐
+│  Furniture Catalog (Sheet Panel)    │
+│  ───────────────────────────────── │
+│  Current: "3-Seater Sofa"         │
+│                                    │
+│  [🛋️ Sectional Sofa] [🛋️ Loveseat]│
+│  [🛋️ Chaise Lounge]  [🛋️ Sleeper] │
+│                                    │
+│  Category: [Seating ▼]            │
+│  Style filter: [Japandi ▼]        │
+└────────────────────────────────────┘
+        │
+        ▼  Pick replacement
+Replace in same position + rotation
+Old item returns to catalog
+```
+
+#### Technology
+
+| Need | Solution |
+|------|----------|
+| **Drag in 3D** | `@react-three/drei` `DragControls` — built-in, works with R3F |
+| **Ground plane raycast** | Three.js `Raycaster` against invisible floor plane |
+| **Bounding box collision** | Three.js `Box3` — cheap AABB overlap checks per frame during drag |
+| **Snap-to-grid** | `Math.round(pos / gridSize) * gridSize` on drag release |
+| **Wall snap** | Pre-calculate wall edge positions from room vertices; distance check |
+| **Ghost preview** | Clone mesh with `opacity: 0.4`, `depthWrite: false` |
+| **Context menu** | Custom shadcn-based popover on right-click / long-press |
+| **Catalog panel** | shadcn sheet component, lazy-loaded GLB thumbnails |
+| **Undo/Redo** | Zustand middleware: snapshot furniture state on each action |
 ┌──────────────────────────────────────────────────────────────────┐
 │  RENDER PIPELINE (Per Room)                                       │
 │                                                                   │

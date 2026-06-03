@@ -402,6 +402,6 @@ Furniture: Low-profile wooden sofa, oval coffee table, tatami-style rug, floor l
 1. **Furniture templates scope** — How many room template variations per style? (5? 10? 20?)
 2. **Render credit model** — Free X renders/month? Or unlimited but low-res?
 3. **Competition landscape** — Are there Singapore-specific competitors in this space?
-4. **BTO project data** — Do you have access to a list of recent BTO projects + floor plans?
+4. **BTO project data** — Scope: all HDB BTO projects from **2025 onwards**. Do you have floor plans for Verandah Kallang, Queenstown, and upcoming 2025 launches?
 5. **Pricing** — Freemium (limited renders) vs subscription vs one-off per project?
 6. **Brand name** — Do you have a name in mind for the app?

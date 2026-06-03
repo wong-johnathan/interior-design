@@ -229,7 +229,11 @@ This is the **core screen** where most time is spent. It has a 3-panel layout on
 
 ---
 
-### Screen 6: Furniture Selection
+### Screen 6: Furniture Selection & Tweak Mode
+
+Two modes: **Quick Apply** (AI places everything) or **Tweak Mode** (drag-to-place, LAVU-style).
+
+#### Mode A: Quick Apply
 
 ```
 ┌────────────────────────────────────────────────┐
@@ -247,7 +251,7 @@ This is the **core screen** where most time is spent. It has a 3-panel layout on
 │  │  ✅ Floor lamp                           │    │
 │  │  ✅ TV console                           │    │
 │  │                                          │    │
-│  │  [Apply All] [Customize...]              │    │
+│  │  [Apply & Continue]  [Tweak Mode ▼]     │    │
 │  └────────────────────────────────────────┘    │
 │                                                │
 │  Alternative:                                  │
@@ -255,19 +259,78 @@ This is the **core screen** where most time is spent. It has a 3-panel layout on
 └────────────────────────────────────────────────┘
 ```
 
-**States:**
+#### Mode B: Tweak Mode (Drag-to-Place)
 
-| State | Message |
-|-------|---------|
-| **Loading templates** | "Finding the best furniture for your room..." |
-| **Template found** | Preview card with item list |
-| **No template found** | "No furniture set available for [style]+[room] yet. Export to SketchUp to furnish manually." |
-| **Applied** | Furniture appears in 3D viewport |
-| **User customizing** | Toggle individual items on/off |
+When user enters Tweak Mode, the 3D viewport transforms:
 
----
+```
+┌───────────────────────────────────────────────────────────────┐
+│  [Done Tweaking] [Undo] [Redo] [Reset]          Living Room   │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│            ┌──────────────────────┐                           │
+│            │          Wall snap ──│─── [15cm ✅]             │
+│            │     🛋️               │                           │
+│            │    Sofa  ← dragging  │  💡 Floor Lamp           │
+│            │                      │                           │
+│            │         ┌──────┐     │                           │
+│            │         │ Table│     │  🪴 Plant                │
+│            │         └──────┘     │                           │
+│            └──────────────────────┘                           │
+│                       ════ Grid overlay (25cm)                │
+│                                                               │
+│  Room dims: 5.2m × 4.8m                                      │
+├───────────────────────────────────────────────────────────────┤
+│  [🛋️ Catalog ➜]    Tap furniture to move. Drag handles.      │
+└───────────────────────────────────────────────────────────────┘
+```
 
-### Screen 7: Export to SketchUp
+**Interaction states:**
+
+| Action | Visual Feedback |
+|--------|----------------|
+| **Hover over furniture** | Glow outline + cursor change to grab |
+| **Start dragging** | Ghost preview (40% opacity) at current position; original stays as reference |
+| **Snap preview** | Ghost snaps to nearest grid/wall position; green tint = valid, red = collision |
+| **Drop in invalid position** | Furniture returns to original position; red flash |
+| **Drop in valid position** | Furniture slides to snapped position; green checkmark toast |
+| **Rotate** | Rotation ring appears; snap at 45° increments |
+| **Long-press / right-click** | Context menu with: Swap, Remove, Rotate, Copy |
+
+#### Furniture Catalog Panel
+
+```
+┌──────────────────────────────────────────────┐
+│  🛋️ Furniture Catalog        🔍 Search...   │
+│──────────────────────────────────────────────│
+│                                              │
+│  Seating   │  🛋️ 3-Seater Sofa     [4]     │
+│            │  🛋️ Sectional Sofa    [2]     │
+│  Tables    │  🛋️ Loveseat         [3]     │
+│            │  🛋️ Chaise Lounge     [1]     │
+│  Lighting  │────────────────────────────────│
+│            │  Filter by style: [Japandi ▼]  │
+│  Decor     │  Sort by: [Popularity ▼]       │
+│            │                                │
+│  Storage   │  Drag any item into the room   │
+│            │  to place it!                  │
+└──────────────────────────────────────────────┘
+```
+
+**Swap flow:**
+1. Right-click sofa → "Swap Item"
+2. Catalog panel opens filtered to Seating category
+3. Click sectional sofa → preview in place (ghost)
+4. Confirm → old sofa removed, new one appears
+5. Fine-tune position by dragging
+
+**Add new flow:**
+1. Open catalog panel
+2. Drag "Floor Lamp" from panel into 3D viewport
+3. Ghost appears at cursor position on floor
+4. Release to place; snap to nearest valid position
+
+### Screen 7: Export Options
 
 ```
 ┌────────────────────────────────────────────┐
