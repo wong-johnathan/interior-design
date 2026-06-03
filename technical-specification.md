@@ -4,7 +4,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Draft v1.0 |
+| **Status** | Draft v2.0 |
 | **Date** | 2026-06-03 |
 | **Author** | Johnathan Wong |
 | **Repo** | github.com/wong-johnathan/interior-design |
@@ -1244,7 +1244,7 @@ jobs:
 
 ### 8.4 Supabase Configuration for Vercel
 
-Supabase requires **connection pooling** for Vercel serverless functions (which use many short-lived connections):
+Supabase requires **connection pooling** for Vercel serverless functions:
 
 ```
 DATABASE_URL (pooled, port 6543) → Used by Next.js API routes at runtime
@@ -1252,6 +1252,45 @@ DIRECT_URL    (direct, port 5432) → Used by Prisma migrations only
 ```
 
 **Important:** Enable "Connection Pooling" in Supabase dashboard → Database → Connection pooling. This uses PgBouncer to manage serverless connection spikes.
+
+### 8.5 Waitlist System ("Notify Me When Added")
+
+When a user searches for a BTO project not yet in the library, they can register interest:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  "This BTO isn't in our library yet."                        │
+│                                                               │
+│  We're adding new projects regularly.                        │
+│  Get notified when "{project name}" becomes available.       │
+│                                                               │
+│  [Notify Me →]                                                │
+│                                                               │
+│  (Stored to WaitlistEntry table. Admin sees in dashboard.)    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Prisma model:**
+```prisma
+model WaitlistEntry {
+  id          String   @id @default(cuid())
+  email       String   // User's email (from auth or manual input)
+  userId      String?  // If logged in
+  projectName String   // What they searched for
+  location    String?  // Optional, from search context
+  notified    Boolean  @default(false) // True once admin adds it + notification sent
+  createdAt   DateTime @default(now())
+
+  @@index([email])
+  @@index([notified, createdAt])
+}
+```
+
+**Admin dashboard integration:**
+- Admin Dashboard shows: "📋 3 waitlist entries — projects not yet added"
+- Click → list of all entries grouped by `projectName`
+- When admin publishes a matching BTO project, they click "Notify All" → sends email (via Resend / SendGrid)
+- Mark `notified: true` once sent
 
 ---
 

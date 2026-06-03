@@ -4,7 +4,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Draft v1.0 |
+| **Status** | Draft v2.0 |
 | **Date** | 2026-06-03 |
 | **Author** | Johnathan Wong |
 

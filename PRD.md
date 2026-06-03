@@ -4,7 +4,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Draft v1.1 |
+| **Status** | Draft v2.0 |
 | **Date** | 2026-06-03 |
 | **Author** | Johnathan Wong |
 | **Previous** | v1.0 (initial draft) |
@@ -43,7 +43,7 @@ A web application that lets HDB homeowners bring their future flat to life — f
 | **3D Export** | Three.js ColladaExporter / OBJExporter | Client-side export; no backend needed |
 | **AI Design Consultant** | Gemini 2.5 Pro | Multi-turn chat → structured Design Brief JSON |
 | **AI Rendering** | Gemini Imagen | Photorealistic per-room renders from 3D base + design brief |
-| **Authentication** | NextAuth.js (Auth.js) | Google OAuth primary; email/password fallback |
+| **Authentication** | NextAuth.js (Auth.js) | Google OAuth only |
 | **Deployment** | Vercel (frontend + API routes) | Zero-config, edge functions |
 | **Queue** | None (MVP) → BullMQ + Redis (v2) | Not needed until batch operations |
 
