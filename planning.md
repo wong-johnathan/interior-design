@@ -12,20 +12,21 @@
 
 ---
 
-## 1. Revised Phases (Based on New UX)
+## 1. Revised Phases (Based on Wall-Editing Architecture)
 
-The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnish/SketchUp → renders) changes the implementation order. The AI consultant now comes **before** the SketchUp export, and furniture templates are a new phase.
+The wall-editing pipeline (BTO → **Edit Floor Plan** → AI consultant → Furnish → Renders) adds a major new component. The admin annotation workflow also changes from polygon-drawing to wall-segment drawing with auto room detection.
 
 | Phase | Weeks | Focus |
 |-------|-------|-------|
 | 0 | 1 | Project scaffold + infrastructure |
-| 1 | 2-3 | Admin panel + BTO template system |
-| 2 | 4-5 | 3D viewport + mesh generation |
-| 3 | 6-8 | AI design consultant (chat + brief) |
-| 4 | 9-11 | Furniture template system + Drag-to-place (LAVU-style) |
-| 5 | 12-13 | SketchUp export/import |
-| 6 | 14-15 | Photorealistic rendering (Gemini) |
-| 7 | 16-17 | User features + polish |
+| 1 | 2-4 | Admin panel + wall-based BTO template system |
+| 2 | 5-6 | 3D viewport + wall-segment mesh generation |
+| 3 | 7-9 | AI design consultant (chat + brief) |
+| 4 | 10-11 | User-facing floor plan editor |
+| 5 | 12-14 | Furniture template system + Drag-to-place (LAVU-style) |
+| 6 | 15 | SketchUp export/import |
+| 7 | 16-17 | Photorealistic rendering (Gemini) |
+| 8 | 18-19 | User features + polish |
 
 ---
 
@@ -54,10 +55,12 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 | 1.3 | BTO project CRUD | `app/admin/bto/page.tsx`, API routes | Create, list, edit BTO projects |
 | 1.4 | Flat model CRUD (within BTO project) | `app/admin/bto/[id]/models/` | Add 4-room/5-room variants |
 | 1.5 | Floor plan upload → R2 → preview | `app/api/upload/route.ts` | Image uploads, preview renders |
-| 1.6 | Room annotation canvas (react-konva) | `components/admin/RoomAnnotationCanvas.tsx` | Draw room polygons on floor plan |
-| 1.7 | Room property panel (type, dimensions, materials) | `components/admin/RoomPropertyPanel.tsx` | Save room config |
-| 1.8 | Door/window placement on walls | Added to annotation canvas | Markers visible on rooms |
-| 1.9 | Save + publish BTO project with all models | API routes + DB | Published projects visible to users |
+| 1.6 | Wall annotation canvas (react-konva) | `components/admin/WallAnnotationCanvas.tsx` | Draw wall segments on floor plan |
+| 1.7 | Auto room detection from wall enclosures | `lib/mesh/roomDetection.ts` | System computes rooms from wall loops |
+| 1.8 | Room property panel (type, label, materials) | `components/admin/RoomPropertyPanel.tsx` | Label auto-detected rooms |
+| 1.9 | Wall property panel (load-bearing, wall type) | `components/admin/WallPropertyPanel.tsx` | Mark load-bearing, external/party/internal |
+| 1.10 | Door/window placement on walls | `components/admin/DoorWindowPlacement.tsx` | Markers on wall segments |
+| 1.11 | Save + publish BTO project with all walls + rooms | API routes + DB | Published projects visible to users |
 
 **Checkpoint:** Admin can add a BTO project, upload floor plan, annotate rooms, publish.
 
@@ -106,30 +109,56 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 
 ---
 
-### Phase 4 — Furniture Template System (Week 9-10)
+### Phase 4 — User-Facing Floor Plan Editor (Week 10-11)
+
+*The ability to knock down walls, merge rooms, split rooms, and customize layouts before styling.*
 
 | # | Task | Key Files | Verification |
 |---|------|-----------|-------------|
-| 4.1 | FurnitureTemplate Prisma model | `prisma/schema.prisma` | DB table created |
-| 4.2 | Admin: furniture template CRUD | `app/admin/furniture/` | Create template with furniture list |
-| 4.3 | Admin: upload 3D furniture models (GLB) to R2 | `app/api/upload/route.ts` | Furniture files stored |
-| 4.4 | Template matching engine (roomType + styleTag) | `lib/furniture/matcher.ts` | Returns correct template |
-| 4.5 | Furniture placement logic (scale + anchor) | `lib/furniture/placer.ts` | Sofa against wall, bed centered |
-| 4.6 | Furniture 3D component (load GLB, position) | `components/viewport/Furniture.tsx` | Furniture visible in scene |
-| 4.7 | Furniture selector UI | `components/furniture/FurnitureSelector.tsx` | Shows matching templates |
-| 4.8 | Accept/reject per item | `components/furniture/PlacementToggle.tsx` | Toggle individual furniture pieces |
-| 4.9 | Seed templates: 6 room×style combinations | Data file | Templates available |
-| 4.10 | **DragControls integration** (LAVU-style) | `components/viewport/DragableFurniture.tsx` | Furniture items are pickable and draggable |
-| 4.11 | Ground plane raycast for drag | `lib/furniture/raycaster.ts` | Items stay on floor (Y=0) during drag |
-| 4.12 | Snap-to-grid system (25cm) | `lib/furniture/snapping.ts` | Furniture snaps on release |
-| 4.13 | Wall snap detection | `lib/furniture/wallSnap.ts` | Within 20cm → snaps to 15cm gap |
-| 4.14 | Collision detection (AABB) | `lib/furniture/collision.ts` | Red ghost when overlapping |
-| 4.15 | Ghost preview during drag | `components/viewport/DragGhost.tsx` | Transparent ghost follows cursor |
-| 4.16 | Context menu (swap, remove, rotate) | `components/furniture/ContextMenu.tsx` | Right-click → menu appears |
-| 4.17 | Furniture catalog panel | `components/furniture/CatalogPanel.tsx` | Search, filter, drag-into-room |
-| 4.18 | Swap item flow | `lib/furniture/swapper.ts` | Pick catalog item → replaces in place |
-| 4.19 | Undo/redo for furniture state | Zustand middleware + history stack | Ctrl+Z reverts last action |
-| 4.20 | Tweak mode toggle (Quick Apply vs. Tweak) | UI mode switch in viewport | Seamless switch between modes |
+| 4.1 | 2D floor plan canvas (react-konva) | `components/flooreditor/FloorPlanCanvas.tsx` | Wall segments render on floor plan overlay |
+| 4.2 | Wall data model from flat model (load wall segments) | `lib/flooreditor/wallData.ts` | Admin's walls loaded into editor |
+| 4.3 | Select mode — click wall to highlight, show properties | `components/flooreditor/SelectMode.tsx` | Wall highlights on click |
+| 4.4 | Delete mode — selected wall + confirmation dialog | `components/flooreditor/DeleteWallDialog.tsx` | Wall removed, rooms auto-merge |
+| 4.5 | Draw wall mode — click existing wall → drag to another wall (snap) | `components/flooreditor/DrawMode.tsx` | New wall appears, room splits |
+| 4.6 | Auto room recomputation after every edit | `lib/flooreditor/roomEngine.ts` | Rooms recalculated from wall graph |
+| 4.7 | Structural wall visual style (hatched/colored, non-selectable for delete) | `components/flooreditor/StructuralWallOverlay.tsx` | Load-bearing walls look different |
+| 4.8 | Door/window shift on wall move (openings follow their wall) | `lib/flooreditor/doorShift.ts` | Doors stay on wall when wall endpoint moves |
+| 4.9 | Room label + type picker (user names merged/split rooms) | `components/flooreditor/RoomLabelEditor.tsx` | Prompt after each wall change |
+| 4.10 | Undo/redo stack (patch list approach, 50+ steps) | `lib/flooreditor/history.ts` | Ctrl+Z reverts last wall action |
+| 4.11 | Reset to original layout | `components/flooreditor/ResetButton.tsx` | All wall edits cleared |
+| 4.12 | Live 3D preview panel (side panel shows updated 3D scene) | `components/flooreditor/LivePreview3D.tsx` | R3F renders current wall state |
+| 4.13 | Validation on apply (enclosed rooms, no orphan walls) | `lib/flooreditor/validation.ts` | Errors shown before proceeding |
+| 4.14 | "Use Default Layout" skip button | Entry point in flow | User skips to AI consultant directly |
+| 4.15 | Save wallEdits to project + proceed pipeline | `app/api/projects/[id]/walls/route.ts` | Wall edits persisted, flow continues |
+
+**Checkpoint:** User can select flat → edit walls → see updated 3D → proceed to AI consultant.
+
+---
+
+### Phase 5 — Furniture Template System (Week 12-14)
+
+| # | Task | Key Files | Verification |
+|---|------|-----------|-------------|
+| 5.1 | FurnitureTemplate Prisma model | `prisma/schema.prisma` | DB table created |
+| 5.2 | Admin: furniture template CRUD | `app/admin/furniture/` | Create template with furniture list |
+| 5.3 | Admin: upload 3D furniture models (GLB) to R2 | `app/api/upload/route.ts` | Furniture files stored |
+| 5.4 | Template matching engine (roomType + styleTag) | `lib/furniture/matcher.ts` | Returns correct template |
+| 5.5 | Furniture placement logic (scale + anchor) | `lib/furniture/placer.ts` | Sofa against wall, bed centered |
+| 5.6 | Furniture 3D component (load GLB, position) | `components/viewport/Furniture.tsx` | Furniture visible in scene |
+| 5.7 | Furniture selector UI | `components/furniture/FurnitureSelector.tsx` | Shows matching templates |
+| 5.8 | Accept/reject per item | `components/furniture/PlacementToggle.tsx` | Toggle individual furniture pieces |
+| 5.9 | Seed templates: 6 room×style combinations | Data file | Templates available |
+| 5.10 | DragControls integration (LAVU-style) | `components/viewport/DragableFurniture.tsx` | Furniture items are pickable and draggable |
+| 5.11 | Ground plane raycast for drag | `lib/furniture/raycaster.ts` | Items stay on floor (Y=0) during drag |
+| 5.12 | Snap-to-grid system (25cm) | `lib/furniture/snapping.ts` | Furniture snaps on release |
+| 5.13 | Wall snap detection | `lib/furniture/wallSnap.ts` | Within 20cm → snaps to 15cm gap |
+| 5.14 | Collision detection (AABB) | `lib/furniture/collision.ts` | Red ghost when overlapping |
+| 5.15 | Ghost preview during drag | `components/viewport/DragGhost.tsx` | Transparent ghost follows cursor |
+| 5.16 | Context menu (swap, remove, rotate) | `components/furniture/ContextMenu.tsx` | Right-click → menu appears |
+| 5.17 | Furniture catalog panel | `components/furniture/CatalogPanel.tsx` | Search, filter, drag-into-room |
+| 5.18 | Swap item flow | `lib/furniture/swapper.ts` | Pick catalog item → replaces in place |
+| 5.19 | Undo/redo for furniture state | Zustand middleware + history stack | Ctrl+Z reverts last action |
+| 5.20 | Tweak mode toggle (Quick Apply vs. Tweak) | UI mode switch in viewport | Seamless switch between modes |
 
 **Seed templates (MVP):**
 
@@ -144,7 +173,7 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 
 ---
 
-### Phase 5 — SketchUp Export/Import (Week 12-13)
+### Phase 6 — SketchUp Export/Import (Week 15)
 
 | # | Task | Key Files | Verification |
 |---|------|-----------|-------------|
@@ -161,30 +190,30 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 
 ---
 
-### Phase 6 — Photorealistic Rendering with 3-Tier System (Week 14-15)
+### Phase 7 — Photorealistic Rendering with 3-Tier System (Week 16-17)
 
 | # | Task | Key Files | Verification |
 |---|------|-----------|-------------|
-| 6.1 | Offscreen room screenshot capture | `lib/ai/renderRoom.ts` | PNG of room from best angle |
-| 6.2 | Construct per-room render prompt from brief | `lib/ai/renderPrompt.ts` | Prompt describes room accurately |
-| 6.3 | Gemini Imagen API integration | `lib/ai/gemini.ts` | API returns image |
-| 6.4 | Camera presets per room type (auto angles) | `lib/render/cameraPresets.ts` | 2-3 auto angles per room type |
-| 6.5 | Sample render API route (`/api/render/sample`) | `app/api/render/sample/route.ts` | 1 room rendered, tier=sample |
-| 6.6 | Final render API route (`/api/render/final`) | `app/api/render/final/route.ts` | Batch render all rooms at selected angles |
-| 6.7 | Sample render UI (room picker + review + tweak) | `components/renders/SampleRender.tsx` | Pick room → see result → tweak prompt |
-| 6.8 | Custom camera angle capture (Camera Mode) | `components/viewport/CameraCapture.tsx` | Free cam → capture → saved |
-| 6.9 | Angle selection for final render | `components/renders/AngleSelector.tsx` | Checkbox grid per room |
-| 6.10 | Render progress bar + sequential queue | `components/renders/RenderProgress.tsx` | "Rendering Room 3 of 6" |
-| 6.11 | Render gallery with room tabs + angle toggle | `components/renders/RenderGallery.tsx` | Tab per room, toggle angles |
-| 6.12 | Stale render detection + "Regenerate" badge | `lib/renders/staleDetection.ts` | Renders marked stale when brief/furniture changes |
-| 6.13 | Before/after slider | `components/renders/BeforeAfterSlider.tsx` | Slide between empty and styled |
-| 6.14 | Breadcrumb navigation + state preservation | `components/layout/StudioBreadcrumb.tsx` | Click breadcrumb → state preserved |
+| 7.1 | Offscreen room screenshot capture | `lib/ai/renderRoom.ts` | PNG of room from best angle |
+| 7.2 | Construct per-room render prompt from brief | `lib/ai/renderPrompt.ts` | Prompt describes room accurately |
+| 7.3 | Gemini Imagen API integration | `lib/ai/gemini.ts` | API returns image |
+| 7.4 | Camera presets per room type (auto angles) | `lib/render/cameraPresets.ts` | 2-3 auto angles per room type |
+| 7.5 | Sample render API route (`/api/render/sample`) | `app/api/render/sample/route.ts` | 1 room rendered, tier=sample |
+| 7.6 | Final render API route (`/api/render/final`) | `app/api/render/final/route.ts` | Batch render all rooms at selected angles |
+| 7.7 | Sample render UI (room picker + review + tweak) | `components/renders/SampleRender.tsx` | Pick room → see result → tweak prompt |
+| 7.8 | Top-down camera angle picker (click floor plan → drag direction) | `components/renders/CameraAnglePicker.tsx` | User clicks 2D floor plan, drags direction, system computes eye-level 3D camera |
+| 7.9 | Angle selection for final render | `components/renders/AngleSelector.tsx` | Checkbox grid per room |
+| 7.10 | Render progress bar + sequential queue | `components/renders/RenderProgress.tsx` | "Rendering Room 3 of 6" |
+| 7.11 | Render gallery with room tabs + angle toggle | `components/renders/RenderGallery.tsx` | Tab per room, toggle angles |
+| 7.12 | Stale render detection + "Regenerate" badge | `lib/renders/staleDetection.ts` | Renders marked stale when brief/furniture changes |
+| 7.13 | Before/after slider | `components/renders/BeforeAfterSlider.tsx` | Slide between empty and styled |
+| 7.14 | Breadcrumb navigation + state preservation | `components/layout/StudioBreadcrumb.tsx` | Click breadcrumb → state preserved |
 
 **Checkpoint:** 3-tier render flow works: Preview (viewport) → Sample (1 room, iterate) → Final (all rooms, selected angles, batch progress).
 
 ---
 
-### Phase 7 — User Features & Polish (Week 16-17)
+### Phase 8 — User Features & Polish (Week 18-19)
 
 | # | Task | Verification |
 |---|------|-------------|
@@ -207,24 +236,28 @@ The refined user flow (OAuth → BTO discovery → AI consultant → auto-furnis
 |------------|-------|-----|
 | R2 bucket setup | Phase 0 | All file operations need storage |
 | Prisma schema finalized | Phase 0 | All CRUD operations depend on it |
-| BTO projects in DB | Phase 1 → Phase 2 | 3D model needs room config data |
+| BTO projects in DB | Phase 1 → Phase 2 | 3D model needs wall + room data |
+| Admin walls + rooms saved | Phase 1 → Phase 4 | Floor plan editor needs wall segment geometry |
+| 3D engine working | Phase 2 → Phase 4 | Live preview needs working wall-segment mesher |
 | Template + rooms saved | Phase 2 → Phase 3 | Chat needs room list from template |
-| AI consultant working | Phase 3 → Phase 4 | Furniture needs style from brief |
-| Brief finalized | Phase 3 → Phase 5 | Export includes styled model |
-| Brief + furniture placed | Phase 5 → Phase 6 | Render needs both |
+| AI consultant working | Phase 3 → Phase 5 | Furniture needs style from brief |
+| Wall edits applied | Phase 4 → Phase 3+ | AI consultant receives the edited layout |
+| Brief finalized | Phase 3 → Phase 6 | Export includes styled model |
+| Brief + furniture placed | Phase 5 → Phase 7 | Render needs both |
 
 ---
 
 ## 4. Phased Rollout Strategy
 
 ```
-Week 1-3:    Admin can create BTO projects → You seed initial library
-Week 4-5:    3D model works → Internal demo
-Week 6-8:    AI consultant works → Dogfood with friends
-Week 9-11:   Furniture templates + drag-to-place → Closer to real product
-Week 12-13:  SketchUp cycle → Power user workflow verified
-Week 14-15:  Renders work → First "wow" moment
-Week 16-17:  Polish → Beta launch
+Week 1-4:    Admin can create BTO projects → You seed initial library
+Week 5-6:    3D model works → Internal demo
+Week 7-9:    AI consultant works → Dogfood with friends
+Week 10-11:  Floor plan editor works → Users can modify layouts
+Week 12-14:  Furniture templates + drag-to-place → Closer to real product
+Week 15:     SketchUp cycle → Power user workflow verified
+Week 16-17:  Renders work → First "wow" moment
+Week 18-19:  Polish → Beta launch
 ```
 
 ---

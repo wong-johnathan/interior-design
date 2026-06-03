@@ -13,7 +13,7 @@
 
 ## 1. Executive Summary
 
-A web application that lets HDB homeowners bring their future flat to life — from BTO selection to photorealistic renders. Users sign up via OAuth, select their BTO project and flat type, then work with an **AI design consultant** through a conversational chat to define the look and feel of every room. The system generates a 3D model with HDB-standard dimensions, optionally auto-furnishes rooms using curated templates, and lets users export to SketchUp for custom furniture placement. Once satisfied, AI (Gemini Imagen) produces photorealistic room renders reflecting the user's design brief.
+A web application that lets HDB homeowners bring their future flat to life — from BTO selection to photorealistic renders. Users sign up via OAuth, select their BTO project and flat type, then optionally **edit the floor plan** (knock down walls, merge rooms, or split rooms) before working with an **AI design consultant** through a conversational chat to define the look and feel of every room. The system generates a 3D model with HDB-standard dimensions from the edited wall layout, optionally auto-furnishes rooms using curated templates, and lets users export to SketchUp for custom furniture placement. Once satisfied, AI (Gemini Imagen) produces photorealistic room renders reflecting the user's design brief.
 
 ---
 
@@ -97,11 +97,29 @@ All heavy 3D operations (mesh generation, format export/import) are handled **cl
    │ 4-Room / 5-Room variant within the BTO project
    │ Shows floor plan preview + unit stats (sqm, room count)
        │
-4. 3D Model Loads
-   │ Empty shell (walls, floors, windows, doors)
-   │ Interactive viewport — orbit, zoom, room labels
-       │
-5. AI Design Consultant (Chat)
+       ├── [Start Designing → Default Layout] ──────────────────┐
+       │                                                       │
+       ▼                                                        │
+4. **Edit Floor Plan** (optional)                               │
+   │ 2D floor plan editor with wall segments                    │
+   │ Tools: Select, Draw Wall, Delete Wall                      │
+   │ 🧱 Load-bearing walls highlighted — cannot delete          │
+   │ Knock down a wall → rooms merge automatically              │
+   │ Draw a new wall → room splits                              │
+   │ Doors/windows shift with their walls                       │
+   │ Structural walls visually distinct, non-deletable          │
+   │ Snap-to-wall, grid snapping, undo/redo                    │
+   │ Live 3D preview of changes in side panel                   │
+   │ [↩ Undo] [↪ Redo] [Reset to Original] [Apply Changes]     │
+       │                                                       │
+       ▼                                                        │
+5. **3D Model Loads** (from edited or default wall set)         │
+   │ Empty shell (walls, floors, windows, doors)               │
+   │ Interactive viewport — orbit, zoom, room labels           │
+   │ Room labels reflect the user's edited layout              │
+       │                                                       │
+6. AI Design Consultant (Chat)                                  │
+   │ "I'd like a Japandi feel overall"                         │
    │ "I'd like a Japandi feel overall"
    │ AI: "Great choice! Light oak or dark walnut flooring for the living?"
    │ User: "Light oak. But kitchen should be vintage green tiles"
@@ -112,29 +130,29 @@ All heavy 3D operations (mesh generation, format export/import) are handled **cl
    { overall: "Japandi"                                          │
      rooms: { living: {...}, kitchen: {...}, mbr: {...} } }      │
        │                                                         │
-6. [Auto-Furnish with Templates]  or  [Export to SketchUp]
+7. [Auto-Furnish with Templates]  or  [Export to SketchUp]
    │ Furniture placed in 3D viewport (PBR materials visible)
    │ Real-time style preview — no AI render needed
        │
-7. Generate Sample Render
+8. Generate Sample Render
    │ 1 room (Living Room by default) → Gemini Imagen
    │ Cost: ~$0.04 per sample
    │ User reviews: "Does this match your vision?"
        │
    ├── [Looks Great!] ──────────────────────────────────────┐
    │                                                        │
-8. Tweak & Iterate (if needed)                              │
+9. Tweak & Iterate (if needed)                              │
    │ User adjusts: style prompt, furniture, materials       │
    │ → [Regenerate Sample] until satisfied                  │
    │ Cost: ~$0.04 per iteration                              │
        │                                                    │
-9. Final Render                                             │
+10. Final Render                                             │
    │ All rooms, multiple auto-calculated angles             │
    │ User can also add custom camera angles                 │
    │ Cost: ~$0.30-0.50 for full HDB unit                     │
    │ Progress: "Rendering Room 3 of 8..."                   │
        │                                                    │
-10. Gallery & Share                                         │
+11. Gallery & Share                                         │
     │ View all renders by room  │  Download HD
     │ Share link with slider    │  Add custom angles
     │ Breadcrumb: Brief > Furniture > Renders
@@ -152,7 +170,8 @@ All heavy 3D operations (mesh generation, format export/import) are handled **cl
 | **OAuth Login** | Sign up with Google; auto-fill profile | User logs in with Google, name/email populated |
 | **BTO Project Discovery** | Search/select from pre-configured BTO projects | Show BTO list; indicate if not yet available |
 | **Flat Model Selector** | Pick specific 4-room/5-room layout for selected BTO | Shows floor plan preview, room count, sqm |
-| **3D Model Generation** | Generate HDB-standard 3D model from template | Walls at 2.8m, correct room layout, doors/windows |
+| **Floor Plan Wall Editor** | Interactive 2D floor plan editor — select, delete, and draw wall segments | Knock down a wall → rooms auto-merge. Draw a wall → room splits. Doors shift with walls. |
+| **3D Model Generation** | Generate HDB-standard 3D model from wall segments (not just polygons) | Walls at 2.8m, correct room layout, doors/windows properly placed |
 | **3D Viewport** | Interactive browser 3D view | Orbit, pan, zoom, room labels, walkthrough mode |
 | **AI Design Consultant (Chat)** | Multi-turn conversational AI that builds a per-room design brief | User types "Japandi feel" → AI asks follow-ups → all rooms styled |
 | **Per-Room Design Brief** | Each room tracked independently | Living room can be Japandi, kitchen can be vintage, renders reflect both |
@@ -162,7 +181,7 @@ All heavy 3D operations (mesh generation, format export/import) are handled **cl
 | **Photorealistic Renders** | Gemini Imagen generates per-room realistic images from 3D view + design brief | One render per room; downloadable |
 | **Render Gallery** | View all room renders in a grid | Thumbnails + full-size view |
 | **Admin: BTO Project Management** | Create/edit BTO projects with floor plan upload | Full admin CRUD |
-| **Admin: Room Annotation** | Draw room boundaries on floor plan, label rooms, set dimensions | Polygon drawing + property panel |
+| **Admin: Room Annotation** | Draw wall segments on floor plan, system auto-detects rooms; label rooms, mark load-bearing walls | Wall drawing + auto room detection + property panel |
 
 ### P1 — Next Phase (Should Have)
 
@@ -225,26 +244,89 @@ model FlatModel {
   floorPlanUrl    String?       // R2 URL for floor plan image
   totalArea       Float?        // square metres
   thumbnailUrl    String?
-  rooms           RoomConfig[]
+  walls           WallSegment[] // NEW: wall-based geometry
+  roomDefs        RoomDef[]     // NEW: room definitions derived from walls
   published       Boolean       @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
 
-model RoomConfig {
-  id              String     @id @default(cuid())
-  flatModel       FlatModel  @relation(fields: [flatModelId], references: [id], onDelete: Cascade)
-  flatModelId     String
-  label           String     // "Living Room", "MBR", "Kitchen", "Toilet 1"
-  roomType        String     // "living", "bedroom_master", "bedroom", "kitchen", "toilet", "bomb_shelter", "service_yard", "hallway"
-  vertices        Json       // Polygon coordinates [[x,y], [x,y], ...]
-  floorHeight     Float      @default(2.8) // metres
-  defaultWallColor  String   @default("#F5F5F0")
-  defaultFloorType  String   @default("parquet") // "tiles" | "parquet" | "laminate" | "vinyl"
-  defaultFloorColor  String  @default("#C4A882")
-  doors           Json?      // [{position, width, height, swing}, ...]
-  windows         Json?      // [{position, width, height, sillHeight}, ...]
-  sortOrder       Int        @default(0)
+// ─── Wall Segments (Editable Geometry) ─────────────────────────
+
+model WallSegment {
+  id            String         @id @default(cuid())
+  flatModel     FlatModel      @relation(fields: [flatModelId], references: [id], onDelete: Cascade)
+  flatModelId   String
+  
+  // 2D line segment (metres from origin)
+  startX        Float
+  startY        Float
+  endX          Float
+  endY          Float
+  
+  // Physical properties
+  thickness     Float          @default(0.15)  // HDB internal wall: 150mm
+  height        Float          @default(2.8)   // HDB ceiling height
+  wallType      String         @default("internal") // "internal" | "external" | "party"
+  isLoadBearing Boolean        @default(false)
+  
+  // Room adjacency (which rooms are on each side of this wall)
+  positiveRoom  RoomDef?       @relation(name: "positiveRoom", fields: [positiveRoomId], references: [id])
+  positiveRoomId String?
+  negativeRoom  RoomDef?       @relation(name: "negativeRoom", fields: [negativeRoomId], references: [id])
+  negativeRoomId String?
+  
+  // Openings
+  doorOpenings  DoorOpening[]
+  windowOpenings WindowOpening[]
+  
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model DoorOpening {
+  id            String       @id @default(cuid())
+  wallSegment   WallSegment  @relation(fields: [wallSegmentId], references: [id], onDelete: Cascade)
+  wallSegmentId String
+  
+  position      Float        // 0.0-1.0 along the wall segment
+  width         Float        @default(0.9)
+  height        Float        @default(2.1)
+  swing         String       @default("in") // "in" | "out"
+}
+
+model WindowOpening {
+  id            String       @id @default(cuid())
+  wallSegment   WallSegment  @relation(fields: [wallSegmentId], references: [id], onDelete: Cascade)
+  wallSegmentId String
+  
+  position      Float        // 0.0-1.0 along the wall segment
+  width         Float        @default(1.2)
+  height        Float        @default(1.2)
+  sillHeight    Float        @default(1.0)
+  windowType    String       @default("casement")
+}
+
+// ─── Rooms (Derived from Wall Enclosures) ─────────────────────
+
+model RoomDef {
+  id                String       @id @default(cuid())
+  flatModel         FlatModel    @relation(fields: [flatModelId], references: [id], onDelete: Cascade)
+  flatModelId       String
+  
+  label             String       // "Living Room", "Master Bedroom"
+  roomType          String       // "living" | "bedroom_master" | "bedroom" | "kitchen" | "toilet" | "bomb_shelter" | "service_yard" | "hallway" | "balcony"
+  originalRoomType  String?      // What admin originally labelled (for reference after user edits)
+
+  // Material defaults
+  defaultWallColor  String       @default("#F5F5F0")
+  defaultFloorType  String       @default("parquet")
+  defaultFloorColor String       @default("#C4A882")
+  
+  sortOrder         Int          @default(0)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 }
 
 model Project {
@@ -253,6 +335,11 @@ model Project {
   userId          String?
   name            String       @default("My Project")
   flatModelId     String?
+  
+  // Wall edit state (patch list — undoable, resetable)
+  wallEdits       Json?        // [{action: "DELETE_WALL", wallId}, ...] or [{action: "ADD_WALL", ...}]
+  
+  // Design state
   designBrief     Json?        // The full Design Brief JSON (per-room styles)
   furnitureState  Json?        // Which furniture templates placed
   chatHistory     Json?        // Full conversation with AI consultant
@@ -393,8 +480,13 @@ Furniture: Low-profile wooden sofa, oval coffee table, tatami-style rug, floor l
 - [ ] At least 5 completed projects on the platform before public launch
 - [ ] Collada export → SketchUp open → re-import works without errors
 - [ ] All flows work on mobile (viewport, chat, render gallery)
-- [ ] Admin can add a new BTO project + configure all rooms in under 15 minutes
+- [ ] Admin can add a new BTO project + configure all walls + rooms in under 20 minutes
+- [ ] User can knock down a wall → rooms auto-merge within 1 second
+- [ ] User can draw a new wall → room splits with correct labels
+- [ ] Load-bearing walls cannot be deleted (visually distinct, blocked action)
+- [ ] Doors and windows shift correctly when their wall is moved
 - [ ] Breadcrumb navigation allows revisiting any stage without losing progress
+- [ ] Undo/redo works for wall edits (at least 50 history steps)
 
 ---
 

@@ -120,7 +120,7 @@
 
 ---
 
-## 3. Flat Model Annotation (The Core Workflow)
+## 3. Flat Model Wall Annotation (The Core Workflow)
 
 This is the **most important admin screen**. You'll spend the most time here — one per layout per BTO project.
 
@@ -148,100 +148,96 @@ This is the **most important admin screen**. You'll spend the most time here —
 │  │  Supported: PNG, JPG, PDF     Max: 50MB              │    │
 │  │  Recommended: PNG at 2048px wide                      │    │
 │  │                                                       │    │
-│  │  Tip: Use HDB's official floor plan PDFs.            │    │
+│  │  Tip: Use HDB's official floor plan PDFs.             │    │
 │  │  Convert to PNG with clean contrast.                  │    │
 │  └──────────────────────────────────────────────────────┘    │
 │                                                               │
 │  ═══════════════════════════════════════════════════════════  │
 │                                                               │
-│  Step 3: Annotate Rooms                                       │
-│  ┌─────────────── Canvas ───────────────┬── Properties ───┐  │
-│  │                                      │                  │  │
-│  │    ┌──────────────┐                  │ Room: Living     │  │
-│  │    │              │  ┌──────┐        │ (selected ▲)    │  │
-│  │    │   Living     │  │ MBR  │        │──────────────── │  │
-│  │    │   Room       │  │      │        │ Room Type:       │  │
-│  │    │              │  └──────┘        │ [Living ▼]      │  │
-│  │    └──────────────┘                  │ Label:           │  │
-│  │  ┌────────────┐    🪟               │ [Living Room]   │  │
-│  │  │  Kitchen   │                     │ Wall Height:     │  │
-│  │  │            │                     │ [2.8] m          │  │
-│  │  └────────────┘                     │ Default Wall:    │  │
-│  │       🚪                            │ [#F5F5F0] [🎨]  │  │
-│  │                                      │ Default Floor:   │  │
-│  │                                      │ [Parquet ▼]     │  │
-│  │                                      │ Floor Color:     │  │
-│  │                                      │ [Light Oak ▼]   │  │
-│  │                                      │                  │  │
-│  │                                      │ Dimensions:      │  │
-│  │                                      │ W: 5.2m  D: 4.8m│  │
-│  │                                      │ Area: 24.96m²   │  │
-│  │                                      │                  │  │
-│  │                                      │ Doors: 1         │  │
-│  │                                      │ 🚪 W: 0.9m       │  │
-│  │                                      │    H: 2.1m       │  │
-│  │                                      │    [Inward ▼]   │  │
-│  │                                      │                  │  │
-│  │                                      │ Windows: 1       │  │
-│  │                                      │ 🪟 W: 1.2m       │  │
-│  │                                      │    H: 1.2m       │  │
-│  │                                      │    Sill: 1.0m   │  │
-│  │                                      │                  │  │
-│  │                                      │ [Add Door]       │  │
-│  │                                      │ [Add Window]     │  │
-│  │                                      │ [Delete Room]    │  │
-│  ├────── Toolbar ───────────────────────┴──────────────────┤  │
-│  │  [✏️ Draw] [✋ Select] [🚪 Door] [🪟 Window] [🗑️ Delete]│  │
-│  │  [🔍 Zoom In] [🔍 Zoom Out] [🔲 Fit to Screen]          │  │
-│  │                                    [Save] [Preview 3D]  │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  Step 3: Draw Walls & Auto-Detect Rooms                      │
+│  ┌─────────────── Canvas ──────────────┬── Properties ─────┐ │
+│  │                                      │                    │ │
+│  │    ═══ External     🧱 Load-bearing │ Wall: Wall 3      │ │
+│  │    ─── Internal                      │ (selected ▲)      │ │
+│  │                                      │────────────────── │ │
+│  │    ┌───────────┬──────────┐          │ Wall Type:         │ │
+│  │    │           │          │          │ [Internal ▼]       │ │
+│  │    │  Living   │   MBR    │          │ Load-bearing:      │ │
+│  │    │   Room    │          │          │ [No ▼]            │ │
+│  │    │           │          │          │ Thickness:         │ │
+│  │    └───────────┴──────────┘          │ [0.15] m          │ │
+│  │  ┌──────────┐ 🚪 🪟                  │ Height:            │ │
+│  │  │ Kitchen  │                        │ [2.8] m           │ │
+│  │  │          │                        │ Length: 4.0m      │ │
+│  │  └──────────┘                        │                    │ │
+│  │            🚪                        │ Adjacent Rooms:    │ │
+│  │                                      │ Left: Living       │ │
+│  │                                      │ Right: MBR         │ │
+│  │                                      │                    │ │
+│  │                                      │ Doors on this wall:│ │
+│  │                                      │ 🚪 1 (pos 0.45)   │ │
+│  │                                      │ Windows: 0         │ │
+│  │                                      │                    │ │
+│  │                                      │ [Add Door]         │ │
+│  │                                      │ [Add Window]       │ │
+│  │                                      │ [Delete Wall]      │ │
+│  ├─────── Toolbar ──────────────────────┴───────────────────┤ │
+│  │  [✏️ Draw] [✋ Select] [🚪 Door] [🪟 Window] [🗑️ Delete]  │ │
+│  │  [🏷️ Room Type] [🧱 Toggle Load-Bearing]                  │ │
+│  │  [🔍 Zoom In] [🔍 Zoom Out] [🔲 Fit to Screen]            │ │
+│  │                                    [Save] [Preview 3D]    │ │
+│  └──────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 Drawing Rooms — Step by Step
+### 3.2 Drawing Walls — Step by Step
 
 | Step | Action | What Happens |
 |------|--------|-------------|
-| **1** | Click **Draw** tool | Cursor changes to crosshair |
-| **2** | Click on floor plan image | First vertex placed (dot appears) |
-| **3** | Click next corner | Line draws between points |
-| **4** | Continue clicking corners | Polygon forms around room |
-| **5** | **Double-click** to close | Polygon closes, room highlighted |
-| **6** | Properties panel opens | Shows room with auto-calculated dimensions |
-| **7** | Select **Room Type** from dropdown | Sets icon colour + default materials |
-| **8** | Adjust **label** if needed | e.g. "Master Bedroom" vs "Bedroom 2" |
-| **9** | Repeat for all rooms | Each room added to list |
-| **10** | Click **Save** | Rooms stored in database |
+| **1** | Click **Draw** tool | Cursor changes to crosshair, snappable endpoints on existing walls highlight |
+| **2** | Click on floor plan or snap to existing wall endpoint | First point placed (dot appears) |
+| **3** | Click next point | Wall segment line draws between points |
+| **4** | Continue clicking to chain walls | Connected wall segments form the outline |
+| **5** | Snap to existing wall endpoint to close | Wall loop closes; system detects enclosed area as a room |
+| **6** | New room appears in properties panel | Auto-detected room shown with auto-calculated area |
+| **7** | Click **Room Type** dropdown | Sets icon, default materials for the detected room |
+| **8** | Click **Label** to customise | e.g. "Master Bedroom" vs "Bedroom 2" |
+| **9** | Repeat for all walls | Each wall drawn adds to the segment list; rooms detected automatically |
+| **10** | Click **Save** | Walls + rooms stored in database |
 
-**Tips for accurate drawing:**
-- Draw clockwise around the room for correct wall winding
-- Zoom in for precise corner placement
-- Use the floor plan's scale (if known) — set scale in model settings
-- Walls between adjacent rooms should share the same edge
+**Tips for accurate wall drawing:**
+- Draw walls as complete edges between room corners
+- Every shared wall between two rooms should be a single wall segment (system handles both sides)
+- After all walls are drawn, click "Auto-Detect Rooms" button to verify all enclosures are found
+- Mark external walls as `wallType: "external"` — they form the flat boundary
+- Mark party walls as `wallType: "party"` — shared with neighbour
+- Check that load-bearing walls are correctly flagged before publishing
+- Use the grid overlay (toggle with `G`) for precise perpendicular walls
 
 ### 3.3 Placing Doors & Windows
 
 ```
-After drawing rooms, place doors and windows on wall edges.
+Doors and windows are placed ON wall segments (not rooms):
 
 Door Placement:
-1. Click on a wall edge → "Add Door" button appears
-2. Click "Add Door" → dialog slides down from wall
-3. Set: Width (default 0.9m), Height (2.1m), Swing direction
-4. Drag door along wall to position it correctly
+1. Click **Select** tool, then click a wall segment → "Add Door" button
+2. Click "Add Door" → dialog slides down
+3. Set: Width (default 0.9m), Height (2.1m), Swing direction, Position along wall (drag slider 0.0-1.0)
+4. The door symbol appears on the wall with a swing arc
 5. Click away to confirm
 
 Window Placement:
-1. Click on a wall edge → "Add Window" appears
+1. Click a wall segment → "Add Window" appears
 2. Click "Add Window" → dialog appears
-3. Set: Width (1.2m), Height (1.2m), Sill Height (1.0m)
-4. Drag along wall to position
+3. Set: Width (1.2m), Height (1.2m), Sill Height (1.0m), Window type
+4. Position along wall using drag slider
 5. Click away to confirm
 
 Visual feedback:
-- Door: arch symbol on wall edge, shows swing arc
+- Door: arch symbol on wall edge, shows swing arc, width scales visually
 - Window: rectangle on wall, shows sill line
-- Both: dashed line through wall showing cutout
+- Both can be dragged along the wall to fine-tune position
+- External walls can have windows; internal walls typically have doors only
 ```
 
 ### 3.4 Room Types & Visual Mapping
@@ -258,14 +254,14 @@ Visual feedback:
 | **Balcony** | 🌿 | `#E8E0D8` Warm Grey | Tiles, Stone |
 | **Hallway** | 🚪 | `#F5F5F0` Warm White | Vinyl, Beige |
 
-### 3.5 After All Rooms Are Drawn
+### 3.5 After All Walls Are Drawn
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  ✅ All rooms annotated for Verandah 4-Room Model A         │
+│  ✅ All walls annotated for Verandah 4-Room Model A          │
 │                                                               │
 │  ┌──────────────────────────────────────────────────────┐    │
-│  │  Room Summary                                         │    │
+│  │  Room Summary (Auto-Detected from Wall Enclosures)    │    │
 │  │  ─────────────                                       │    │
 │  │  # │ Room          │ Type     │ Area    │ Doors│Win  │    │
 │  │  ───┼──────────────┼──────────┼─────────┼──────┼─────│    │
@@ -594,14 +590,15 @@ Step 2: Add First Flat Model                         (1 min)
    └→ Upload floor plan image
    └→ Save
 
-Step 3: Annotate Rooms                              (20 min)
-   └→ Click "Annotate Rooms"
-   └→ Use Draw tool: click corners around Living Room
-   └→ Set room type → Living
-   └→ Repeat for MBR, Bedroom 2, Kitchen, Toilet 1, Toilet 2,
-       Bomb Shelter, Hallway (8 rooms typical)
-   └→ Place doors on wall edges
-   └→ Place windows on exterior walls
+Step 3: Draw Walls & Auto-Detect Rooms                    (20 min)
+   └→ Click "Annotate Walls"
+   └→ Use Draw tool: click to place wall segments around each room
+   └→ System auto-detects enclosed areas as rooms
+   └→ Set room type → Living, MBR, Kitchen, etc.
+   └→ Mark load-bearing walls (they won't be deletable by users)
+   └→ Mark wall types (internal/external/party)
+   └→ Place doors on wall segments (drag slider for position)
+   └→ Place windows on external wall segments
    └→ Save
 
 Step 4: Preview & Fix                                (5 min)

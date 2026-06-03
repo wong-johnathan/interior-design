@@ -13,25 +13,30 @@
 ## 1. User Journey Map
 
 ```
-┌────────────┐     ┌────────────┐     ┌──────────────┐     ┌────────────┐     ┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────────┐
-│  Sign Up    │ ──► │  BTO/Buy   │ ──► │  3D Model    │ ──► │  AI Design  │ ──► │  Furnish or  │ ──► │  Sample      │ ──► │  Final       │ ──► │  Gallery &  │
-│  (OAuth)    │     │  Project   │     │  Preview    │     │  Consultant │     │  Export      │     │  Render      │     │  Render      │     │  Share      │
-└────────────┘     └────────────┘     └──────────────┘     └────────────┘     └─────────────┘     └─────────────┘     └──────────────┘     └──────────────┘
-                        │                   │                   │                   │                   │                   │                    │
-                    Search BTO         See empty 3D         Chat about          Pick furniture      1 room sample       All rooms,          View rendered
-                    by project name    flat with all        style per room       template or          via Gemini          selected angles      gallery with
-                        │             room labels            │  export to       Imagen              batch render         angle toggle
-                        ▼                   ▼                   ▼            SketchUp ▼               │                    ▼                  ▼
-                   Select flat         Orbit / zoom /       AI asks Qs,        Template places     "Does this           Progress bar:       Download HD
-                   type (4/5 rm)      walkthrough          user answers         furniture in        match your           "3 of 6 rooms"      share link
-                        │                   │             brief builds        correct spots        vision?"                   │        before/after slider
-                    Floor plan         Real-time           per room                  │                    │             Renders appear          │
-                    preview             material            │              OR user exports         [Looks Great!]        in gallery        Shareable
-                        │             preview from          │              to SketchUp,           → Final Render               │          public page
-                   Ready to           brief changes          ▼              edits, re-import      [Tweak Prompt]         Breadcrumb         │
-                   start styling?                      User says "I'm                              → Regenerate          nav active      Go back to edit
-                                                       happy!" → Brief                            (up to 5x)                            any step
-                                                        finalized                                                                      via breadcrumb
+┌────────────┐     ┌────────────┐     ┌──────────────────┐     ┌──────────────┐     ┌────────────┐     ┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────────┐
+│  Sign Up    │ ──► │  BTO/Buy   │ ──► │  Edit Floor      │ ──► │  3D Model    │ ──► │  AI Design  │ ──► │  Furnish or  │ ──► │  Sample      │ ──► │  Final       │ ──► │  Gallery &  │
+│  (OAuth)    │     │  Project   │     │  Plan (opt)      │     │  Preview    │     │  Consultant │     │  Export      │     │  Render      │     │  Render      │     │  Share      │
+└────────────┘     └────────────┘     └──────────────────┘     └──────────────┘     └────────────┘     └─────────────┘     └─────────────┘     └──────────────┘     └──────────────┘
+                        │                   │                       │                   │                   │                   │                    │
+                    Search BTO         Decide: edit layout      See 3D model        Chat about          Pick furniture      1 room sample          All rooms,       View rendered
+                    by project name    or skip to default?      from edited (or      style per room       template or          via Gemini            selected angles   gallery with
+                        │             Always has skip            default) walls       │  export to       Imagen                batch render         angle toggle
+                        ▼             button                    │              SketchUp ▼               │                       ▼                  ▼
+                   Select flat         ┌──────────────────┐  Orbit / zoom /         │           ┌────────────────┐  Progress bar:           Download HD
+                   type (4/5 rm)       │ 2D Floor Plan    │  walkthrough          AI asks Qs,  │ Template places │  "3 of 6 rooms"          share link
+                        │             │ Wall segments     │  Real-time             user answers │ furniture in   │           │        before/after slider
+                    Floor plan         │ Select/Draw/     │  material preview      brief builds  │ correct spots   │  Renders appear     │
+                    preview            │ Delete wall      │  from brief changes    per room      │ per edited      │  in gallery     Shareable
+                        │             │ Rooms auto-merge/│         │              │ rooms           │         │          public page
+                   Ready to           │ split on edit    │         ▼              ▼           OR user exports     │              │
+                   start styling?    │ Structural walls │   User says "I'm     Room labels     to SketchUp,       │         Go back to edit
+                                      │ highlighted        │   happy!" → Brief   match edited   edits, re-import   │         any step
+                        │             │ Live 3D preview  │         │           layout            │          via breadcrumb
+                        ▼             │ Undo/Redo       │         ▼               ▼                   ▼
+                   [Start Designing]  │ Reset to orig.  │   Brief finalized    Furniture           Gallery
+                   → Skip to 3D       │ [Apply Changes] │                      placed              renders
+                   [Edit Layout]      └──────────────────┘
+                   → Enter editor
 ```
 
 ---
@@ -100,9 +105,67 @@
 
 **Key UX rule:** The user should be able to see the floor plan layout at a glance, with room labels clearly marked. This is their "ah, that's my flat" moment.
 
+The flat model selector also presents two CTAs:
+- **[Start Designing]** → skips floor plan editor, uses default layout
+- **[Edit Layout First]** → enters the floor plan editor (Screen 4)
+
 ---
 
-### Screen 4: 3D Studio (Main Design Screen)
+### Screen 4: Floor Plan Editor (Optional)
+
+Shown after user selects a flat model. Two CTAs: "Start Designing" (skip — use default layout) and "Edit Layout" (enter editor).
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  ✏️ Edit Your Floor Plan         Verandah 4-Room Model A   │
+├────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────────┬──────────────────────────────────────┐   │
+│  │  Tools       │  2D Floor Plan Canvas                 │   │
+│  │              │                                        │   │
+│  │  🔍 Select   │   ┌───────┬──────────┐                │   │
+│  │  📐 Draw     │   │       │          │                │   │
+│  │  ❌ Delete   │   │Living │   MBR    │                │   │
+│  │              │   │       │          │                │   │
+│  │  🧱 Load-    │   ├───────┤──────────┤                │   │
+│  │  bearing     │   │       │  Bed 2   │                │   │
+│  │  (cannot     │   │Kitch  │          │                │   │
+│  │   delete)    │   └───────┴──────────┘                │   │
+│  │              │                                        │   │
+│  │  Grid snap   │   Wall selected: Wall 3 (Living-MBR)  │   │
+│  │  on          │   Type: Internal   Load-bearing: No   │   │
+│  │  [25cm]      │   Length: 4.0m     [Delete Wall]      │   │
+│  │              │                                        │   │
+│  │  [↩ Undo]    ├────────────────────────────────────────┤   │
+│  │  [↪ Redo]    │  🏠 Live 3D Preview                    │   │
+│  │  [Reset]     │  ┌────────────────────────────────┐    │   │
+│  │              │  │  Viewport shows current wall    │    │   │
+│  │              │  │  state in real-time             │    │   │
+│  │              │  └────────────────────────────────┘    │   │
+│  └──────────────┴────────────────────────────────────────┘   │
+│                                                             │
+│           [Use Default Layout → Skip]                       │
+│           [Apply Changes → Start Designing]                 │
+└────────────────────────────────────────────────────────────┘
+```
+
+**States:**
+
+| State | Message |
+|-------|---------|
+| **Default (no edits)** | "Your flat is ready. Make changes or start designing." |
+| **Wall selected** | Wall highlighted in accent color; properties shown in panel |
+| **Wall deleted (merge)** | Confirmation: "Merge Living Room and Bedroom 2? [Merge] [Cancel]" |
+| **Wall drawn (split)** | "Name the new rooms: [________] [________] [Done]" |
+| **Invalid edit** | "This wall cannot be deleted (load-bearing)" or "Room must be fully enclosed" |
+| **Structural wall hovered** | Tooltip: "🧱 Load-bearing wall — cannot be removed" |
+| **Editing in progress** | "Apply Changes" button active; Undo/Redo available |
+| **Reset to original** | "Reset all edits? This cannot be undone. [Reset] [Cancel]" |
+| **Mobile** | Simplified view — tools as bottom bar, canvas full-width, 3D preview hidden |
+
+---
+
+### Screen 5: 3D Studio (Main Design Screen)
 
 This is the **core screen** where most time is spent. It has a 3-panel layout on desktop:
 
@@ -175,7 +238,7 @@ This is the **core screen** where most time is spent. It has a 3-panel layout on
 
 ---
 
-### Screen 5: AI Consultant Chat
+### Screen 6: AI Consultant Chat
 
 **Visual design principles:**
 
@@ -229,7 +292,7 @@ This is the **core screen** where most time is spent. It has a 3-panel layout on
 
 ---
 
-### Screen 6: Furniture Selection & Tweak Mode
+### Screen 7: Furniture Selection & Tweak Mode
 
 Two modes: **Quick Apply** (AI places everything) or **Tweak Mode** (drag-to-place, LAVU-style).
 
@@ -330,7 +393,7 @@ When user enters Tweak Mode, the 3D viewport transforms:
 3. Ghost appears at cursor position on floor
 4. Release to place; snap to nearest valid position
 
-### Screen 7: Export Options
+### Screen 8: Export Options
 
 ```
 ┌────────────────────────────────────────────┐
@@ -365,7 +428,7 @@ When user enters Tweak Mode, the 3D viewport transforms:
 
 ---
 
-### Screen 8: Breadcrumb Navigation
+### Screen 9: Breadcrumb Navigation
 
 Persistent across the entire studio, accessible at the top of every screen:
 
@@ -373,8 +436,8 @@ Persistent across the entire studio, accessible at the top of every screen:
 ┌──────────────────────────────────────────────────────────┐
 │  🏠 My Project                             [Save Draft]  │
 │                                                           │
-│  Design Brief  >  Furniture  >  Renders                  │
-│       ✓               ✓           ◉ (you are here)       │
+│  Design Brief  >  Floor Plan  >  Furniture  >  Renders                  │
+│       ✓               ✓              ✓           ◉ (you are here)       │
 │                                                           │
 │  ═══════════════════════════════════════════════════════  │
 │                                                           │
@@ -390,7 +453,8 @@ Persistent across the entire studio, accessible at the top of every screen:
 
 | Action | What happens |
 |--------|-------------|
-| Click **Design Brief** | Chat panel re-opens with full history. User can add more messages. Brief updates in real-time. Furniture gets: "Your style has changed — update furniture to match?" |
+| Click **Design Brief** | Chat panel re-opens with full history. User can add more messages. Brief updates in real-time. Wall edits preserved. |
+| Click **Floor Plan** | Floor plan editor re-opens with current wall edits. User can modify, then re-apply and proceed. Furniture gets: "Layout changed — reposition furniture?" |
 | Click **Furniture** | Tweak mode reactivates. All previous furniture positions preserved. Stale renders get: "Out of date — regenerate?" badge. |
 | Click **Renders** | Returns to gallery. Current state displayed. |
 | Modify chat → new brief | Auto-furniture shows "Update" prompt. Manual furniture stays unless user chooses to re-apply. |
@@ -398,7 +462,7 @@ Persistent across the entire studio, accessible at the top of every screen:
 
 ---
 
-### Screen 9: Sample Render (Tier 2)
+### Screen 10: Sample Render (Tier 2)
 
 The quality gate before committing to a full batch. Generates 1 image to validate the AI understands the user's style.
 
@@ -463,7 +527,7 @@ The quality gate before committing to a full batch. Generates 1 image to validat
 
 ---
 
-### Screen 10: Final Render Configuration & Gallery (Tier 3)
+### Screen 11: Final Render Configuration & Gallery (Tier 3)
 
 Triggered only after sample is approved. User selects angles per room, then batch-renders.
 
@@ -495,13 +559,14 @@ Triggered only after sample is approved. User selects angles per room, then batc
 │  └──────────────────────────────────────────────────────┘    │
 │                                                               │
 │  ┌─ Custom Camera Angle ────────────────────────────────┐    │
-│  │  Capture your own angle:                              │    │
+│  │  Add your own angle from the floor plan:             │    │
 │  │                                                       │    │
-│  │  → Click [📷 Camera Mode] in the 3D viewport         │    │
-│  │  → Controls switch to free camera                    │    │
-│  │  → Move camera to your desired angle                 │    │
-│  │  → Click [Capture This View]                         │    │
+│  │  → Click [📷 Add Camera Angle]                        │    │
+│  │  → 2D floor plan overlay appears                      │    │
+│  │  → Click anywhere inside a room (eye-level position) │    │
+│  │  → Drag to set the viewing direction                 │    │
 │  │  → Name it: "Kitchen Breakfast Bar"                  │    │
+│  │  → System computes 3D camera coordinates             │    │
 │  │  → Appears in the list above as "Custom +"           │    │
 │  └──────────────────────────────────────────────────────┘    │
 │                                                               │
@@ -557,7 +622,7 @@ Triggered only after sample is approved. User selects angles per room, then batc
 
 ---
 
-### Screen 11: Studio Top Bar (Persistent Breadcrumb)
+### Screen 12: Studio Top Bar (Persistent Breadcrumb)
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -586,6 +651,10 @@ Triggered only after sample is approved. User selects angles per room, then batc
 | **Gemini render fails** | "Render failed. We've logged the issue. Try again with a simpler description." |
 | **User refreshes mid-chat** | Chat history restored from DB; AI picks up where it left off |
 | **WebGL not supported** | Fallback: 2D floor plan view with room colors; no 3D |
+| **Wall edit invalid** | "This edit would leave a room unenclosed. Walls must form a closed loop." |
+| **Structural wall deletion blocked** | "🧱 This is a load-bearing wall and cannot be removed. HDB approval is required for structural changes." |
+| **Room below minimum size** | Warning (not blocking): "This room is quite small. Consider expanding it into the adjacent space." |
+| **Orphan wall detected** | "This wall segment is not attached to any room. Add walls to form an enclosed space or delete it." |
 | **SketchUp file too large** | "File too large (max 50MB). Try exporting fewer rooms at once." |
 | **Re-imported file unrecognized** | "Couldn't read this file. Make sure it was exported from this system and hasn't been heavily modified." |
 | **Mobile + 3D performance** | Show simplified model (lower polygon count); show "Performance mode" toggle |

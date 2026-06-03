@@ -4,10 +4,12 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Draft v2.0 |
+| **Status** | Draft v3.0 |
 | **Date** | 2026-06-03 |
 | **Author** | Johnathan Wong |
 | **Repo** | github.com/wong-johnathan/interior-design |
+
+> **Note:** This specification includes the wall-editing subsystem. For the complete design rationale and data model details, see **[wall-editing-architecture.md](./wall-editing-architecture.md)**. The old `RoomConfig` model is replaced by `WallSegment` + `RoomDef` models.
 
 ---
 
@@ -196,7 +198,8 @@ model FlatModel {
   thumbnailUrl  String?
   totalArea     Float?       // square metres
   roomCount     Int?         // Number of rooms (excluding bathrooms/hallway)
-  rooms         RoomConfig[]
+  walls         WallSegment[]
+  roomDefs      RoomDef[]
   published     Boolean      @default(false)
   sortOrder     Int          @default(0)
   createdAt     DateTime     @default(now())
@@ -206,20 +209,84 @@ model FlatModel {
   @@index([flatType])
 }
 
-model RoomConfig {
-  id                String    @id @default(cuid())
-  flatModel         FlatModel @relation(fields: [flatModelId], references: [id], onDelete: Cascade)
+// ─── Wall Segments (Editable Geometry) ─────────────────────────
+
+model WallSegment {
+  id            String         @id @default(cuid())
+  flatModel     FlatModel      @relation(fields: [flatModelId], references: [id], onDelete: Cascade)
+  flatModelId   String
+  
+  // 2D line segment (metres from origin)
+  startX        Float
+  startY        Float
+  endX          Float
+  endY          Float
+  
+  // Physical properties
+  thickness     Float          @default(0.15)  // HDB internal wall: 150mm
+  height        Float          @default(2.8)   // HDB ceiling height
+  wallType      String         @default("internal") // "internal" | "external" | "party"
+  isLoadBearing Boolean        @default(false)
+  
+  // Room adjacency
+  positiveRoom  RoomDef?       @relation(name: "positiveRoom", fields: [positiveRoomId], references: [id])
+  positiveRoomId String?
+  negativeRoom  RoomDef?       @relation(name: "negativeRoom", fields: [negativeRoomId], references: [id])
+  negativeRoomId String?
+  
+  // Openings
+  doorOpenings  DoorOpening[]
+  windowOpenings WindowOpening[]
+  
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([flatModelId])
+}
+
+model DoorOpening {
+  id            String       @id @default(cuid())
+  wallSegment   WallSegment  @relation(fields: [wallSegmentId], references: [id], onDelete: Cascade)
+  wallSegmentId String
+  
+  position      Float        // 0.0-1.0 along the wall segment
+  width         Float        @default(0.9)
+  height        Float        @default(2.1)
+  swing         String       @default("in") // "in" | "out"
+}
+
+model WindowOpening {
+  id            String       @id @default(cuid())
+  wallSegment   WallSegment  @relation(fields: [wallSegmentId], references: [id], onDelete: Cascade)
+  wallSegmentId String
+  
+  position      Float        // 0.0-1.0 along the wall segment
+  width         Float        @default(1.2)
+  height        Float        @default(1.2)
+  sillHeight    Float        @default(1.0)
+  windowType    String       @default("casement")
+}
+
+// ─── Rooms (Derived from Wall Enclosures) ─────────────────────
+
+model RoomDef {
+  id                String       @id @default(cuid())
+  flatModel         FlatModel    @relation(fields: [flatModelId], references: [id], onDelete: Cascade)
   flatModelId       String
-  label             String    // "Living Room", "MBR", "Kitchen", "Toilet 1"
-  roomType          String    // "living" | "bedroom_master" | "bedroom" | "kitchen" | "toilet" | "bomb_shelter" | "service_yard" | "hallway" | "balcony"
-  vertices          Json      // Polygon [[x,y], [x,y], ...] in pixels
-  floorHeight       Float     @default(2.8) // metres
-  defaultWallColor  String    @default("#F5F5F0")
-  defaultFloorType  String    @default("parquet") // "tiles" | "parquet" | "laminate" | "vinyl" | "marble"
-  defaultFloorColor String    @default("#C4A882")
-  doors             Json?     // [{position: {x,y}, width, height, swing: "in"|"out"}, ...]
-  windows           Json?     // [{position: {x,y}, width, height, sillHeight: 1.0}, ...]
-  sortOrder         Int       @default(0)
+  
+  label             String       // "Living Room", "Master Bedroom"
+  roomType          String       // "living" | "bedroom_master" | "bedroom" | "kitchen" | "toilet" | "bomb_shelter" | "service_yard" | "hallway" | "balcony"
+  originalRoomType  String?      // What admin originally labelled (for reference after user edits)
+
+  // Material defaults
+  defaultWallColor  String       @default("#F5F5F0")
+  defaultFloorType  String       @default("parquet")
+  defaultFloorColor String       @default("#C4A882")
+  
+  sortOrder         Int          @default(0)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   @@index([flatModelId])
 }
@@ -232,6 +299,9 @@ model Project {
   userId          String?
   name            String        @default("My Project")
   flatModelId     String?
+  
+  // Wall edit state (patch list — undoable, resettable)
+  wallEdits       Json?         // [{action: "DELETE_WALL", wallId}, ...]
   
   // Design state
   designBrief     Json?         // Full DesignBrief JSON — per-room styles
@@ -337,7 +407,8 @@ model StylePreset {
 |-------|-------|-----------|
 | `SELECT * FROM BTOProject WHERE published = true ORDER BY launchYear DESC` | `[published, launchYear]` | Every page load |
 | `SELECT * FROM FlatModel WHERE btoProjectId = $1 AND published = true` | `[btoProjectId, published]` | BTO selection |
-| `SELECT * FROM RoomConfig WHERE flatModelId = $1 ORDER BY sortOrder` | `[flatModelId]` | 3D model load |
+| `SELECT * FROM WallSegment WHERE flatModelId = $1 ORDER BY sortOrder` | `[flatModelId]` | 3D model load |
+| `SELECT * FROM RoomDef WHERE flatModelId = $1 ORDER BY sortOrder` | `[flatModelId]` | Room labelling |
 | `SELECT * FROM Project WHERE userId = $1 ORDER BY updatedAt DESC` | `[userId]`, `[updatedAt]` | Dashboard |
 | `SELECT * FROM Render WHERE projectId = $1 ORDER BY createdAt` | `[projectId]` | Render gallery |
 | `SELECT * FROM FurnitureTemplate WHERE roomType = $1 AND (styleTag = $2 OR styleTag IS NULL)` | `[roomType, styleTag]` | Template matching |
@@ -345,35 +416,18 @@ model StylePreset {
 
 ### 2.3 JSON Column Shapes
 
-**RoomConfig.vertices:**
-```json
-[[0, 0], [500, 0], [500, 300], [0, 300]]
-// Pixel coordinates on the floor plan image
-```
+**WallSegment data** is stored in typed columns (startX, startY, endX, endY, thickness, height, wallType, isLoadBearing) — no JSON needed. Doors and windows are separate models (DoorOpening, WindowOpening) with typed fields.
 
-**RoomConfig.doors:**
+**RoomDef** has typed columns (label, roomType, defaultWallColor, etc.) — no JSON needed.
+
+**Legacy note:** Old RoomConfig.vertices/doors/windows JSON columns are replaced. Migration script converts polygon data to wall segments on first deploy.
+
+**Project.wallEdits:**
 ```json
 [
-  {
-    "position": { "x": 200, "y": 0 },
-    "width": 0.9,
-    "height": 2.1,
-    "swing": "in",
-    "wallIndex": 0
-  }
-]
-```
-
-**RoomConfig.windows:**
-```json
-[
-  {
-    "position": { "x": 50, "y": 0 },
-    "width": 1.2,
-    "height": 1.2,
-    "sillHeight": 1.0,
-    "wallIndex": 0
-  }
+  { "action": "DELETE_WALL", "wallId": "cm123..." },
+  { "action": "ADD_WALL", "wall": { "startX": 5.0, "startY": 0, "endX": 5.0, "endY": 4.0, "thickness": 0.15, "height": 2.8 } },
+  { "action": "MODIFY_ROOM", "roomId": "cm456...", "updates": { "label": "Living + Study" } }
 ]
 ```
 
@@ -512,7 +566,7 @@ async function consult(
   message: string,
   history: ChatMessage[],
   currentBrief: DesignBrief,
-  rooms: RoomConfig[]
+  rooms: RoomDef[]
 ): Promise<ConsultResponse> {
   const systemPrompt = getSystemPrompt(rooms);
 
@@ -620,23 +674,41 @@ const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
 // 100 far plane = plenty for HDB unit depth
 ```
 
-### 4.2 Mesh Generation Pipeline
+### 4.2 Mesh Generation Pipeline (Wall-Segment Based)
+
+The old approach extruded room polygons. The new approach generates 3D walls as box geometries from wall segments.
 
 ```typescript
-// 1. Room polygon → wall geometry
-function generateWalls(vertices: Vec2[], height: number): THREE.BufferGeometry {
-  const shape = new THREE.Shape(vertices.map(v => new THREE.Vector2(v.x, v.y)));
-  const extrudeSettings = {
-    depth: height,
-    bevelEnabled: false,          // No bevel — saves vertices
-    bevelThickness: 0,
-  };
-  const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-  geometry.computeVertexNormals();
-  return geometry;
+// 1. Wall segment → 3D box geometry (replaces old polygon extrusion)
+function generateWallMesh(wall: WallSegment): THREE.Mesh {
+  const dx = wall.endX - wall.startX;
+  const dy = wall.endY - wall.startY;
+  const length = Math.sqrt(dx * dx + dy * dy);
+  const angle = Math.atan2(dy, dx);
+  
+  const geo = new THREE.BoxGeometry(length, wall.height, wall.thickness);
+  const mesh = new THREE.Mesh(geo, getWallMaterial(wall));
+  
+  // Position at segment midpoint
+  mesh.position.set(
+    (wall.startX + wall.endX) / 2,
+    wall.height / 2,
+    (wall.startY + wall.endY) / 2
+  );
+  mesh.rotation.y = -angle;
+  
+  // Apply door/window cutouts
+  for (const door of wall.doorOpenings) {
+    cutOpening(mesh, door, 'door');
+  }
+  for (const window of wall.windowOpenings) {
+    cutOpening(mesh, window, 'window');
+  }
+  
+  return mesh;
 }
 
-// 2. Floor slab
+// 2. Floor slab from wall enclosure loop
 function generateFloor(vertices: Vec2[]): THREE.BufferGeometry {
   const shape = new THREE.Shape(vertices.map(v => new THREE.Vector2(v.x, v.y)));
   const geometry = new THREE.ShapeGeometry(shape);
@@ -808,10 +880,14 @@ All furniture models target ≤ 5K triangles per item.
 | POST | `/api/bto/[id]/models` | Admin | 10/min | Create flat model |
 | PUT | `/api/models/[id]` | Admin | 10/min | Update flat model + rooms |
 | DELETE | `/api/models/[id]` | Admin | 5/min | Delete flat model |
+| GET | `/api/models/[id]/walls` | Public | 60/min | Get wall segments + room defs for a flat model |
 | POST | `/api/projects` | User | 30/min | Create new project |
 | GET | `/api/projects/[id]` | User | 60/min | Get project state |
 | PUT | `/api/projects/[id]` | User | 60/min | Update project |
 | PUT | `/api/projects/[id]/brief` | User | 60/min | Update design brief |
+| PUT | `/api/projects/[id]/walls` | User | 30/min | Save wall edits (patch list) |
+| GET | `/api/projects/[id]/walls` | User | 60/min | Get current wall state after edits |
+| POST | `/api/walls/validate` | User | 30/min | Validate wall edit before applying |
 | GET | `/api/projects/[id]/chat` | User | 60/min | Get chat history |
 | POST | `/api/ai/consult` | User | 30/min | Send message to AI consultant |
 | POST | `/api/render/sample` | User | 15/min | Generate sample render (1 room) |
@@ -938,6 +1014,9 @@ const furnitureApplySchema = z.object({
 /studio/[projectId]    → app/studio/[projectId]/page.tsx  Main SPA (fully Client)
                         Contains: 3D viewport, chat, furniture, gallery
                         All Three.js code lazy-loaded here — never loaded on landing
+
+/edit/[projectId]      → app/edit/[projectId]/page.tsx  Floor Plan Editor (Client)
+                        Contains: react-konva canvas, wall tools, live 3D preview
 
 /admin/*               → app/admin/**/*              Admin panel (Client, auth-guarded)
 

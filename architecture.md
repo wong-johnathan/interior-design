@@ -4,10 +4,12 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Draft v2.0 |
+| **Status** | Draft v3.0 |
 | **Date** | 2026-06-03 |
 | **Author** | Johnathan Wong |
-| **Previous** | v1.0 (initial draft) |
+| **Previous** | v2.0 (pre-wall-editing) |
+
+> **Note:** This document describes the overall architecture. For the complete wall-editing subsystem (data models, shared-wall algorithm, floor plan editor, validation), see **[wall-editing-architecture.md](./wall-editing-architecture.md)** which supersedes RoomConfig-related sections.
 
 ---
 
@@ -18,20 +20,21 @@
 │                          CLIENT (Browser)                                 │
 │                                                                           │
 │  ┌────────────┐  ┌──────────────────────┐  ┌────────────────────────┐   │
-│  │ Next.js UI  │  │  3D Engine (R3F)      │  │ Design Studio          │   │
-│  │             │  │  ┌────────────────┐   │  │ ┌──────────────────┐ │   │
-│  │ Landing     │  │  │ Mesh Generator │   │  │ │ AI Consultant    │ │   │
-│  │ Browse      │  │  │(BufferGeom)    │   │  │ │ Chat Interface   │ │   │
-│  │ Studio      │  │  │ Material Swap  │   │  │ │ Per-Room Brief   │ │   │
-│  │ Gallery     │  │  │ Export/Import  │   │  │ │ Design Summary   │ │   │
-│  │ Admin       │  │  │ Furniture      │   │  │ └──────────────────┘ │   │
-│  └────────────┘  │  │ Placement      │   │  └────────────────────────┘   │
-│                  │  └────────────────┘   │                               │
-│                  └──────────────────────┘                               │
+│  │ Next.js UI  │  │  3D Engine (R3F)      │  │ Floor Plan Editor       │   │
+│  │             │  │  ┌────────────────┐   │  │ (react-konva)           │   │
+│  │ Landing     │  │  │ Mesh Generator │   │  │ ┌──────────────────┐ │   │
+│  │ Browse      │  │  │(Wall Segments) │   │  │ │ Wall Canvas      │ │   │
+│  │ Studio      │  │  │ Material Swap  │   │  │ │ Select/Draw/Delete│ │   │
+│  │ Gallery     │  │  │ Export/Import  │   │  │ │ Auto Room Detect │ │   │
+│  │ Admin       │  │  │ Furniture      │   │  │ │ Structural Walls │ │   │
+│  └────────────┘  │  │ Placement      │   │  │ │ Undo/Redo        │ │   │
+│                  │  └────────────────┘   │  │ └──────────────────┘ │   │
+│                  └──────────────────────┘  └────────────────────────┘   │
 │                                                                           │
 │  ┌──────────────────────────────────────────────────────────────────┐    │
-│  │  Floor Plan Annotation (react-konva) — Admin Only                 │    │
-│  │  [Upload BTO Floor Plan] → [Draw Rooms] → [Label] → [Save]       │    │
+│  │  Wall Annotation (react-konva) — Admin Only                        │   │
+│  │  [Upload BTO Floor Plan] → [Draw Walls] → [Auto Detect Rooms]    │   │
+│  │  → [Label Rooms + Mark Load-Bearing] → [Save]                     │   │
 │  └──────────────────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────────────────┘
                               │ API Calls (HTTPS)
@@ -485,7 +488,7 @@ interface CustomAngle {
 | Design Brief source | AI consultant output | User fills form directly | Conversational is faster, more creative |
 | Furniture system | Curated templates | AI-generated layout | Reliable, controllable, faster MVP |
 | Render engine | Gemini Imagen (img2img) | Stable Diffusion + ControlNet | Gemini has native image conditioning; simpler API |
-| 3D geometry | Client-side Three.js | Server-side Python (trimesh) | No backend needed; sub-second mesh gen |
+| 3D geometry | Client-side wall-segment mesh (wall-as-box) | Server-side Python (trimesh) | No backend needed; supports wall editing |
 | Chat protocol | Streaming SSE | WebSocket | Simpler infrastructure; Vercel-compatible |
 | BTO data model | Admin-curated | Scrape HDB website | Reliable, curated quality; no stale data |
 
@@ -571,7 +574,18 @@ components/
 │   ├── BTOProjectCard.tsx
 │   ├── FlatModelSelector.tsx
 │   └── FloorPlanPreview.tsx
-├── viewport/                        # 3D viewport
+├── flooreditor/                       # Floor plan editor (user-facing)
+│   ├── FloorPlanEditor.tsx            # Main editor layout
+│   ├── FloorPlanCanvas.tsx            # react-konva canvas
+│   ├── SelectMode.tsx                 # Wall selection tool
+│   ├── DrawMode.tsx                   # Wall drawing tool
+│   ├── DeleteWallDialog.tsx           # Merge confirmation
+│   ├── RoomLabelEditor.tsx            # Name rooms after merge/split
+│   ├── StructuralWallOverlay.tsx      # Load-bearing highlights
+│   ├── LivePreview3D.tsx              # Side panel 3D preview
+│   ├── FloorPlanToolbar.tsx           # Toolbar (modes, undo/redo)
+│   └── FloorPlanHistory.tsx           # Undo/redo state
+├── viewport/                          # 3D viewport
 │   ├── Studio.tsx                   # Main studio layout (viewport + panels)
 │   ├── Scene.tsx                    # R3F Canvas
 │   ├── Building.tsx                 # Flat 3D model
@@ -610,8 +624,10 @@ components/
 └── admin/                           # Admin components
     ├── BTOProjectForm.tsx
     ├── FlatModelForm.tsx
-    ├── RoomAnnotationCanvas.tsx
+    ├── WallAnnotationCanvas.tsx
+    ├── WallPropertyPanel.tsx
     ├── RoomPropertyPanel.tsx
+    ├── DoorWindowPlacement.tsx
     ├── FurnitureTemplateForm.tsx
     └── AdminDashboard.tsx
 ```

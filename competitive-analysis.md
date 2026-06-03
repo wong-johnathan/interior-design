@@ -100,6 +100,7 @@ Five main competitors in the interior design + AI + 3D space:
 | **HDB/BTO-specific** | Global tools assume standard rooms | Our admin-curated BTO templates fit perfectly |
 | **Auto-furnish with control** | Foyr does it but expensive; RoomGPT does it but no control | Option C templates: curated sets, user can accept/reject items |
 | **SketchUp export** | None offer this | Power users edit in SketchUp, re-import |
+| **Floor plan wall editing** | None allow knocking down walls, merging rooms, or changing layouts | Wall segment editor with structural wall awareness, load-bearing constraints |
 | **Singapore-specific materials** | None know about vinyl, homogeneous tiles, HDB constraints | AI consultant uses HDB-appropriate suggestions |
 | **Price for Singapore market** | Cheapest is $7.49/mo (Planner 5D); richest is free | We can offer generous free tier (limited renders) |
 
