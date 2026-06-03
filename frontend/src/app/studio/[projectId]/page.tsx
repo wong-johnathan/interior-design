@@ -8,6 +8,7 @@ import { ChatPanel } from '@/components/consultant/ChatPanel';
 import { DesignSummary } from '@/components/consultant/DesignSummary';
 import { RoomTabBar } from '@/components/consultant/RoomTabBar';
 import { Button } from '@/components/ui/button';
+import ExportDialog from '@/components/export/ExportDialog';
 import { generateDefaultFloorPlan } from '@/lib/defaultRoomData';
 import { captureViewport } from '@/lib/viewportCapture';
 import {
@@ -36,6 +37,7 @@ export default function StudioPage() {
   const [isMobileChatOpen, setIsMobileChatOpen] = useState(false);
   const [activeRoom, setActiveRoom] = useState('living');
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
   const viewportContainerRef = useRef<HTMLDivElement>(null);
 
   const floorPlan = useMemo(() => generateDefaultFloorPlan(), []);
@@ -105,6 +107,7 @@ export default function StudioPage() {
               variant="secondary"
               size="sm"
               className="bg-slate-700 hover:bg-slate-600 text-xs flex items-center gap-1"
+              onClick={() => setIsExportOpen(true)}
             >
               <Download className="w-3.5 h-3.5" />
               Export
@@ -195,6 +198,9 @@ export default function StudioPage() {
           </div>
         </div>
       )}
+
+      {/* Export Dialog */}
+      <ExportDialog open={isExportOpen} onOpenChange={setIsExportOpen} />
     </div>
   );
 }

@@ -23,8 +23,16 @@ export default function LandingPage() {
           >
             Browse BTOs
           </Link>
+          {session?.user && (
+            <Link
+              href="/dashboard"
+              className="text-sm text-slate-600 hover:text-slate-900 hidden sm:inline"
+            >
+              My Projects
+            </Link>
+          )}
           {session?.user ? (
-            <Link href="/browse">
+            <Link href="/dashboard">
               <Button variant="default" size="sm">
                 Continue Designing
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -56,7 +64,7 @@ export default function LandingPage() {
           </p>
           <div className="flex gap-3 mb-12 flex-wrap">
             {session?.user ? (
-              <Link href="/browse">
+              <Link href="/dashboard">
                 <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white">
                   Continue Designing <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>

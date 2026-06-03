@@ -31,6 +31,15 @@ export function Header() {
           <Search className="w-4 h-4" />
           Browse BTOs
         </Link>
+        {session?.user && (
+          <Link
+            href="/dashboard"
+            className="text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1.5"
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            My Projects
+          </Link>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
@@ -52,7 +61,7 @@ export function Header() {
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel>{session.user.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => window.location.href = '/'}>
+              <DropdownMenuItem onClick={() => window.location.href = '/dashboard'}>
                 <LayoutDashboard className="w-4 h-4 mr-2" />
                 My Projects
               </DropdownMenuItem>
