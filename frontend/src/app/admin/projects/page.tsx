@@ -1,34 +1,75 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Plus, Building2, MapPin, Calendar, Layers, ArrowUpRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Search, Plus, Building2, MapPin, Calendar, Layers, ArrowUpRight, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-const MOCK_PROJECTS = [
-  { id: '1', name: 'Verandah Kallang 2024', slug: 'verandah-kallang-2024', location: 'Kallang', year: 2024, models: 4, status: 'published' as const },
-  { id: '2', name: 'Queenstown Project 2024', slug: 'queenstown-project-2024', location: 'Queenstown', year: 2024, models: 3, status: 'published' as const },
-  { id: '3', name: 'Clementi Ridges 2025', slug: 'clementi-ridges-2025', location: 'Clementi', year: 2025, models: 1, status: 'coming-soon' as const },
-  { id: '4', name: 'Tampines Greenwalk 2025', slug: 'tampines-greenwalk-2025', location: 'Tampines', year: 2025, models: 3, status: 'draft' as const },
-  { id: '5', name: 'Bukit Batok Hillside 2025', slug: 'bukit-batok-hillside-2025', location: 'Bukit Batok', year: 2025, models: 2, status: 'draft' as const },
-  { id: '6', name: 'Woodlands North Shore', slug: 'woodlands-north-shore-2024', location: 'Woodlands', year: 2024, models: 5, status: 'published' as const },
-  { id: '7', name: 'Bedok South Horizon', slug: 'bedok-south-horizon-2025', location: 'Bedok', year: 2025, models: 3, status: 'coming-soon' as const },
-  { id: '8', name: 'Jurong Lake District', slug: 'jurong-lake-district-2026', location: 'Jurong', year: 2026, models: 0, status: 'draft' as const },
+const STORAGE_KEY = 'hdb_admin_projects';
+
+interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  location: string;
+  launchYear: string;
+  status: 'draft' | 'published';
+  createdAt: string;
+  modelName?: string;
+  modelCount?: number;
+}
+
+const MOCK_PROJECTS: Project[] = [
+  { id: '1', name: 'Verandah Kallang 2024', slug: 'verandah-kallang-2024', location: 'Kallang', launchYear: '2024', status: 'published', createdAt: '2024-06-01', modelCount: 4 },
+  { id: '2', name: 'Queenstown Project 2024', slug: 'queenstown-project-2024', location: 'Queenstown', launchYear: '2024', status: 'published', createdAt: '2024-05-15', modelCount: 3 },
+  { id: '3', name: 'Clementi Ridges 2025', slug: 'clementi-ridges-2025', location: 'Clementi', launchYear: '2025', status: 'published', createdAt: '2025-01-10', modelCount: 1 },
+  { id: '4', name: 'Tampines Greenwalk 2025', slug: 'tampines-greenwalk-2025', location: 'Tampines', launchYear: '2025', status: 'draft', createdAt: '2025-02-20', modelCount: 3 },
+  { id: '5', name: 'Bukit Batok Hillside 2025', slug: 'bukit-batok-hillside-2025', location: 'Bukit Batok', launchYear: '2025', status: 'draft', createdAt: '2025-03-05', modelCount: 2 },
+  { id: '6', name: 'Woodlands North Shore', slug: 'woodlands-north-shore-2024', location: 'Woodlands', launchYear: '2024', status: 'published', createdAt: '2024-08-12', modelCount: 5 },
+  { id: '7', name: 'Bedok South Horizon', slug: 'bedok-south-horizon-2025', location: 'Bedok', launchYear: '2025', status: 'published', createdAt: '2025-04-01', modelCount: 3 },
+  { id: '8', name: 'Jurong Lake District', slug: 'jurong-lake-district-2026', location: 'Jurong', launchYear: '2026', status: 'draft', createdAt: '2026-01-15', modelCount: 0 },
 ];
+
+function loadSavedProjects(): Project[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const saved: any[] = JSON.parse(raw);
+    return saved.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      location: p.location || '',
+      launchYear: p.launchYear || '',
+      status: p.status || 'draft',
+      createdAt: p.createdAt || new Date().toISOString(),
+      modelName: p.modelName,
+      modelCount: 1,
+    }));
+  } catch { return []; }
+}
 
 const STATUS_STYLES: Record<string, string> = {
   'published': 'bg-green-100 text-green-700 border-green-200',
   'draft': 'bg-slate-100 text-slate-600 border-slate-200',
-  'coming-soon': 'bg-amber-100 text-amber-700 border-amber-200',
 };
 
 export default function AdminProjectsPage() {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
 
-  const filtered = MOCK_PROJECTS.filter((p) => {
+  useEffect(() => {
+    const saved = loadSavedProjects();
+    setAllProjects([...MOCK_PROJECTS, ...saved]);
+  }, []);
+
+  const filtered = allProjects.filter((p) => {
     const matchesSearch = !search ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.location.toLowerCase().includes(search.toLowerCase()) ||
@@ -36,6 +77,13 @@ export default function AdminProjectsPage() {
     const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleDelete = (id: string) => {
+    const saved = loadSavedProjects();
+    const filtered = saved.filter((p) => p.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    setAllProjects((prev) => prev.filter((p) => p.id !== id));
+  };
 
   return (
     <div className="space-y-6">
@@ -75,10 +123,9 @@ export default function AdminProjectsPage() {
               <option value="all">All Status</option>
               <option value="published">Published</option>
               <option value="draft">Draft</option>
-              <option value="coming-soon">Coming Soon</option>
             </select>
             <div className="text-xs text-slate-400 font-medium ml-auto">
-              {filtered.length} of {MOCK_PROJECTS.length} projects
+              {filtered.length} of {allProjects.length} projects
             </div>
           </div>
         </CardContent>
@@ -94,7 +141,7 @@ export default function AdminProjectsPage() {
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Location</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Year</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Models</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Created</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                   <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
@@ -116,35 +163,38 @@ export default function AdminProjectsPage() {
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1.5 text-slate-600">
                         <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        {project.location}
+                        {project.location || '—'}
                       </div>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1.5 text-slate-600">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        {project.year}
+                        {project.launchYear || '—'}
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-1.5">
-                        <Layers className="w-3.5 h-3.5 text-slate-400" />
-                        <span className={project.models === 0 ? 'text-slate-400' : 'text-slate-700'}>
-                          {project.models}
-                        </span>
-                      </div>
+                    <td className="px-5 py-4 text-slate-500">
+                      {new Date(project.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${STATUS_STYLES[project.status]}`}>
-                        {project.status === 'coming-soon' ? 'Coming Soon' : project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
+                        STATUS_STYLES[project.status] || 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}>
+                        {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-0.5 px-2 py-1 rounded hover:bg-amber-50 transition-colors">
+                        <button
+                          onClick={() => router.push(`/admin/projects/${project.id}`)}
+                          className="text-xs text-amber-600 hover:text-amber-700 font-medium flex items-center gap-0.5 px-2 py-1 rounded hover:bg-amber-50 transition-colors"
+                        >
                           Edit <ArrowUpRight className="w-3 h-3" />
                         </button>
-                        <button className="text-xs text-slate-400 hover:text-red-500 font-medium px-2 py-1 rounded hover:bg-red-50 transition-colors">
-                          Delete
+                        <button
+                          onClick={() => handleDelete(project.id)}
+                          className="text-xs text-slate-400 hover:text-red-500 font-medium flex items-center gap-0.5 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" /> Delete
                         </button>
                       </div>
                     </td>
@@ -157,7 +207,7 @@ export default function AdminProjectsPage() {
           {filtered.length === 0 && (
             <div className="text-center py-12 text-slate-400">
               <Building2 className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-              <p className="text-sm">No projects found matching your search.</p>
+              <p className="text-sm">No projects found. Click "Add New Project" to create one.</p>
             </div>
           )}
         </CardContent>
